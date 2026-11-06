@@ -1,0 +1,13 @@
+{
+  "name": "ecommerce-frontend",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@11.25.0",
+  "scripts": {
+    "dev:admin": "pnpm --filter @ecommerce/admin-web dev",
+    "dev:storefront": "pnpm --filter @ecommerce/storefront-web dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test"
+  }
+}

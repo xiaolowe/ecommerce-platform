@@ -1,0 +1,136 @@
+name: ecommerce-platform
+
+services:
+  mysql:
+    image: mysql:8.4
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_0900_ai_ci"]
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-local-root-password}
+      MYSQL_DATABASE: ecommerce_auth
+      DB_PASSWORD: ${DB_PASSWORD:-local-db-password}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./deploy/local/mysql/init.sh:/docker-entrypoint-initdb.d/001-init.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$${MYSQL_ROOT_PASSWORD} --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+  auth-service:
+    build:
+      context: .
+      args:
+        MODULE_PATH: services/auth-service
+    environment:
+      DB_URL: jdbc:mysql://mysql:3306/ecommerce_auth?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC
+      DB_USERNAME: ecommerce
+      DB_PASSWORD: ${DB_PASSWORD:-local-db-password}
+      JWT_SECRET: ${JWT_SECRET:-local-development-secret-change-before-cloud-1234567890}
+      BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:-admin@example.com}
+      BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:-Admin123!ChangeMe}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "8081:8081"
+
+  catalog-service:
+    build:
+      context: .
+      args:
+        MODULE_PATH: services/catalog-service
+    environment:
+      DB_URL: jdbc:mysql://mysql:3306/ecommerce_catalog?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC
+      DB_USERNAME: ecommerce
+      DB_PASSWORD: ${DB_PASSWORD:-local-db-password}
+      JWT_SECRET: ${JWT_SECRET:-local-development-secret-change-before-cloud-1234567890}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "8082:8082"
+
+  inventory-service:
+    build:
+      context: .
+      args:
+        MODULE_PATH: services/inventory-service
+    environment:
+      DB_URL: jdbc:mysql://mysql:3306/ecommerce_inventory?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC
+      DB_USERNAME: ecommerce
+      DB_PASSWORD: ${DB_PASSWORD:-local-db-password}
+      JWT_SECRET: ${JWT_SECRET:-local-development-secret-change-before-cloud-1234567890}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "8083:8083"
+
+  order-service:
+    build:
+      context: .
+      args:
+        MODULE_PATH: services/order-service
+    environment:
+      DB_URL: jdbc:mysql://mysql:3306/ecommerce_order?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC
+      DB_USERNAME: ecommerce
+      DB_PASSWORD: ${DB_PASSWORD:-local-db-password}
+      JWT_SECRET: ${JWT_SECRET:-local-development-secret-change-before-cloud-1234567890}
+      CATALOG_SERVICE_URL: http://catalog-service:8082
+      INVENTORY_SERVICE_URL: http://inventory-service:8083
+    depends_on:
+      mysql:
+        condition: service_healthy
+      catalog-service:
+        condition: service_started
+      inventory-service:
+        condition: service_started
+    ports:
+      - "8084:8084"
+
+  gateway:
+    build:
+      context: .
+      args:
+        MODULE_PATH: gateway
+    environment:
+      JWT_SECRET: ${JWT_SECRET:-local-development-secret-change-before-cloud-1234567890}
+      AUTH_SERVICE_URL: http://auth-service:8081
+      CATALOG_SERVICE_URL: http://catalog-service:8082
+      INVENTORY_SERVICE_URL: http://inventory-service:8083
+      ORDER_SERVICE_URL: http://order-service:8084
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3001,http://localhost:3002,http://localhost:5173,http://localhost:5174}
+    depends_on:
+      - auth-service
+      - catalog-service
+      - inventory-service
+      - order-service
+    ports:
+      - "8080:8080"
+
+  admin-web:
+    build:
+      context: frontend
+      args:
+        APP: admin-web
+    depends_on:
+      - gateway
+    ports:
+      - "3001:8080"
+
+  storefront-web:
+    build:
+      context: frontend
+      args:
+        APP: storefront-web
+    depends_on:
+      - gateway
+    ports:
+      - "3002:8080"
+
+volumes:
+  mysql-data:

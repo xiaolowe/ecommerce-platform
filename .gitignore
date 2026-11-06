@@ -1,0 +1,13 @@
+.DS_Store
+.idea/
+*.iml
+.vscode/
+target/
+**/target/
+.tools/
+.env
+__pycache__/
+*.pyc
+*.log
+coverage/
+.testcontainers/
