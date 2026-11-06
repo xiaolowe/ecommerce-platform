@@ -24,6 +24,10 @@ spring:
           uri: ${ORDER_SERVICE_URL:http://localhost:8084}
           predicates:
             - Path=/api/v1/orders/**
+        - id: media-service
+          uri: ${MEDIA_SERVICE_URL:http://localhost:8085}
+          predicates:
+            - Path=/api/v1/media/**,/media/**
       default-filters:
         - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
       globalcors:

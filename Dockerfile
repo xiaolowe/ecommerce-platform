@@ -10,6 +10,7 @@ COPY services/auth-service/pom.xml services/auth-service/pom.xml
 COPY services/catalog-service/pom.xml services/catalog-service/pom.xml
 COPY services/inventory-service/pom.xml services/inventory-service/pom.xml
 COPY services/order-service/pom.xml services/order-service/pom.xml
+COPY services/media-service/pom.xml services/media-service/pom.xml
 
 ARG MODULE_PATH
 RUN mvn -B -ntp -pl "${MODULE_PATH}" -am dependency:go-offline
@@ -21,7 +22,7 @@ RUN cp "${MODULE_PATH}"/target/*.jar /workspace/application.jar
 FROM eclipse-temurin:21-jre-jammy
 WORKDIR /opt/app
 
-RUN groupadd --system app && useradd --system --gid app app
+RUN groupadd --gid 10001 app && useradd --uid 10001 --gid app --create-home app
 COPY --from=build /workspace/application.jar app.jar
 
 ENV JAVA_OPTS="-XX:MaxRAMPercentage=75 -XX:+UseG1GC -Djava.security.egd=file:/dev/urandom"

@@ -13,6 +13,7 @@ import java.util.UUID;
 
 import static com.example.commerce.catalog.product.ProductDtos.CreateProductRequest;
 import static com.example.commerce.catalog.product.ProductDtos.ProductResponse;
+import static com.example.commerce.catalog.product.ProductDtos.UpdateProductImageRequest;
 
 @Service
 public class ProductService {
@@ -50,10 +51,26 @@ public class ProductService {
                 request.description(),
                 request.priceCents(),
                 request.currency().toUpperCase(Locale.ROOT),
+                normalizeImageUrl(request.imageUrl()),
                 ProductStatus.ACTIVE,
                 now
         );
         return toResponse(productRepository.save(product));
+    }
+
+    @Transactional
+    public ProductResponse updateImage(String id, UpdateProductImageRequest request) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Product not found: " + id));
+        product.updateImage(normalizeImageUrl(request.imageUrl()));
+        return toResponse(productRepository.saveAndFlush(product));
+    }
+
+    private String normalizeImageUrl(String imageUrl) {
+        if (imageUrl == null || imageUrl.isBlank()) {
+            return null;
+        }
+        return imageUrl.trim();
     }
 
     private ProductResponse toResponse(Product product) {
@@ -64,6 +81,7 @@ public class ProductService {
                 product.getDescription(),
                 product.getPriceCents(),
                 product.getCurrency(),
+                product.getImageUrl(),
                 product.getStatus().name(),
                 product.getCreatedAt(),
                 product.getUpdatedAt()

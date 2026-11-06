@@ -33,6 +33,9 @@ public class Product {
     @Column(nullable = false, length = 3)
     private String currency;
 
+    @Column(name = "image_url", length = 1000)
+    private String imageUrl;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 24)
     private ProductStatus status;
@@ -51,13 +54,14 @@ public class Product {
     }
 
     public Product(String id, String sku, String name, String description, long priceCents,
-                   String currency, ProductStatus status, Instant createdAt) {
+                   String currency, String imageUrl, ProductStatus status, Instant createdAt) {
         this.id = id;
         this.sku = sku;
         this.name = name;
         this.description = description;
         this.priceCents = priceCents;
         this.currency = currency;
+        this.imageUrl = imageUrl;
         this.status = status;
         this.createdAt = createdAt;
         this.updatedAt = createdAt;
@@ -85,6 +89,15 @@ public class Product {
 
     public String getCurrency() {
         return currency;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void updateImage(String imageUrl) {
+        this.imageUrl = imageUrl;
+        this.updatedAt = Instant.now();
     }
 
     public ProductStatus getStatus() {

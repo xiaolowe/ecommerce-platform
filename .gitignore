@@ -5,6 +5,7 @@
 target/
 **/target/
 .tools/
+.data/
 .env
 __pycache__/
 *.pyc

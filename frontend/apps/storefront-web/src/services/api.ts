@@ -21,6 +21,7 @@ export interface Product {
   description?: string
   priceCents: number
   currency: string
+  imageUrl?: string
   status: 'ACTIVE' | 'INACTIVE'
   createdAt: string
   updatedAt: string

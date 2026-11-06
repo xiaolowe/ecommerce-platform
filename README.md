@@ -11,6 +11,7 @@ Java 21 + Spring Boot 的多服务电商基础骨架。当前版本跑通“注�
 | `services/catalog-service` | 8082 | 商品、价格、上下架 |
 | `services/inventory-service` | 8083 | 可售库存、预占、释放、幂等预占单 |
 | `services/order-service` | 8084 | 订单快照、状态机、库存预占与失败补偿 |
+| `services/media-service` | 8085 | 本地图片上传、素材库、公开图片读取 |
 | `frontend/admin-web` | 3001 | Vue 3 + Element Plus 运营后台 |
 | `frontend/storefront-web` | 3002 | Vue 3 用户商城、购物袋和订单确认 |
 
@@ -38,7 +39,11 @@ Java 21 + Spring Boot 的多服务电商基础骨架。当前版本跑通“注�
 - 用户商城：<http://localhost:5174>
 - API 网关：<http://localhost:8080>
 
-H2 数据只存在于当前运行进程中，按 `Ctrl+C` 后清空。这种方式适合本地开发和演示，不替代真实 MySQL 验证。
+业务 H2 数据只存在于当前运行进程中，按 `Ctrl+C` 后清空。图片素材及其元数据会保存在项目 `.data/`，重启后仍可继续使用。这种方式适合本地开发和演示，不替代真实 MySQL 验证。
+
+运营后台的“图片素材”页面支持上传、浏览、复制地址和删除图片。图片文件保存在项目 `.data/media`，商品数据库只保存 `/media/...` 相对地址。当前本地存储支持 JPG、PNG 和 GIF，单张最大 10 MB。
+
+上传图片后，可以在“商品管理”中设置或更换商品主图。商城首页和商品详情会自动展示商品主图。
 
 服务启动后可以生成演示商品和库存：
 

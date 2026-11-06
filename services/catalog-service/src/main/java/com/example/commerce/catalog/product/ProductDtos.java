@@ -16,8 +16,12 @@ public final class ProductDtos {
             @NotBlank @Size(max = 200) String name,
             @Size(max = 2000) String description,
             @Positive long priceCents,
-            @NotBlank @Size(min = 3, max = 3) String currency
+            @NotBlank @Size(min = 3, max = 3) String currency,
+            @Size(max = 1000) String imageUrl
     ) {
+    }
+
+    public record UpdateProductImageRequest(@Size(max = 1000) String imageUrl) {
     }
 
     public record ProductResponse(
@@ -27,6 +31,7 @@ public final class ProductDtos {
             String description,
             long priceCents,
             String currency,
+            String imageUrl,
             String status,
             Instant createdAt,
             Instant updatedAt

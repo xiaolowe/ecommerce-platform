@@ -1,7 +1,15 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
-import { createProduct, listProducts, type Product } from '../services/api'
+import {
+  createProduct,
+  listMediaAssets,
+  listProducts,
+  updateProductImage,
+  uploadImage,
+  type MediaAsset,
+  type Product,
+} from '../services/api'
 import { formatMoney } from '../utils/money'
 
 const loading = ref(false)
@@ -11,12 +19,21 @@ const products = ref<Product[]>([])
 const total = ref(0)
 const page = ref(1)
 const pageSize = 20
+const uploadingImage = ref(false)
+const imageFileInput = ref<HTMLInputElement | null>(null)
+const imageDialogVisible = ref(false)
+const imageProduct = ref<Product | null>(null)
+const mediaAssets = ref<MediaAsset[]>([])
+const mediaLoading = ref(false)
+const mediaUploading = ref(false)
+const mediaFileInput = ref<HTMLInputElement | null>(null)
 const form = reactive({
   sku: '',
   name: '',
   description: '',
   price: 0,
   currency: 'CNY',
+  imageUrl: '',
 })
 
 async function load() {
@@ -31,8 +48,39 @@ async function load() {
 }
 
 function openCreate() {
-  Object.assign(form, { sku: '', name: '', description: '', price: 0, currency: 'CNY' })
+  Object.assign(form, {
+    sku: '',
+    name: '',
+    description: '',
+    price: 0,
+    currency: 'CNY',
+    imageUrl: '',
+  })
   dialogVisible.value = true
+}
+
+function chooseCreateImage() {
+  imageFileInput.value?.click()
+}
+
+async function uploadCreateImage(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file) return
+  if (file.size > 10 * 1024 * 1024) {
+    ElMessage.warning('图片不能超过 10 MB')
+    return
+  }
+  uploadingImage.value = true
+  try {
+    const asset = await uploadImage(file)
+    form.imageUrl = asset.url
+  } catch {
+    ElMessage.error('图片上传失败，仅支持 JPG、PNG 和 GIF')
+  } finally {
+    uploadingImage.value = false
+  }
 }
 
 async function save() {
@@ -48,6 +96,7 @@ async function save() {
       description: form.description.trim(),
       priceCents: Math.round(form.price * 100),
       currency: form.currency,
+      imageUrl: form.imageUrl || undefined,
     })
     ElMessage.success('商品已创建')
     dialogVisible.value = false
@@ -58,6 +107,46 @@ async function save() {
   } finally {
     saving.value = false
   }
+}
+
+async function openImageDialog(row: unknown) {
+  imageProduct.value = row as Product
+  imageDialogVisible.value = true
+  mediaLoading.value = true
+  try {
+    mediaAssets.value = (await listMediaAssets(0, 100)).content
+  } finally {
+    mediaLoading.value = false
+  }
+}
+
+function chooseMediaFile() {
+  mediaFileInput.value?.click()
+}
+
+async function uploadForProduct(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file) return
+  mediaUploading.value = true
+  try {
+    const asset = await uploadImage(file)
+    mediaAssets.value = [asset, ...mediaAssets.value]
+    await setProductImage(asset.url)
+  } catch {
+    ElMessage.error('图片上传失败')
+  } finally {
+    mediaUploading.value = false
+  }
+}
+
+async function setProductImage(imageUrl: string | null) {
+  if (!imageProduct.value) return
+  await updateProductImage(imageProduct.value.id, imageUrl)
+  ElMessage.success('商品主图已更新')
+  imageDialogVisible.value = false
+  await load()
 }
 
 onMounted(load)
@@ -79,6 +168,14 @@ onMounted(load)
         <el-button text @click="load">刷新</el-button>
       </div>
       <el-table v-loading="loading" :data="products">
+        <el-table-column label="主图" width="86">
+          <template #default="{ row }">
+            <div class="table-thumb">
+              <img v-if="row.imageUrl" :src="row.imageUrl" :alt="row.name" />
+              <span v-else>无</span>
+            </div>
+          </template>
+        </el-table-column>
         <el-table-column prop="sku" label="SKU" width="160" />
         <el-table-column prop="name" label="商品名称" min-width="200" />
         <el-table-column prop="description" label="描述" min-width="220" show-overflow-tooltip />
@@ -88,6 +185,11 @@ onMounted(load)
         <el-table-column label="状态" width="110">
           <template #default="{ row }">
             <el-tag :type="row.status === 'ACTIVE' ? 'success' : 'info'">{{ row.status }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="120" fixed="right">
+          <template #default="{ row }">
+            <el-button link type="primary" @click="openImageDialog(row)">设置主图</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -125,10 +227,58 @@ onMounted(load)
           <el-input-number v-model="form.price" :min="0" :precision="2" :step="10" />
           <span class="unit">{{ form.currency }}</span>
         </el-form-item>
+        <el-form-item label="商品主图">
+          <div class="image-picker">
+            <img v-if="form.imageUrl" :src="form.imageUrl" alt="商品主图预览" />
+            <div v-else class="image-placeholder">尚未上传图片</div>
+            <el-button :loading="uploadingImage" @click="chooseCreateImage">上传图片</el-button>
+            <el-button v-if="form.imageUrl" link type="danger" @click="form.imageUrl = ''">移除</el-button>
+          </div>
+          <input
+            ref="imageFileInput"
+            class="hidden-file-input"
+            type="file"
+            accept=".jpg,.jpeg,.png,.gif,image/jpeg,image/png,image/gif"
+            @change="uploadCreateImage"
+          />
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
         <el-button type="primary" :loading="saving" @click="save">创建商品</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog v-model="imageDialogVisible" title="选择商品主图" width="760px">
+      <div class="panel-meta">
+        <span>{{ imageProduct?.name }}</span>
+        <el-button :loading="mediaUploading" @click="chooseMediaFile">上传新图片</el-button>
+      </div>
+      <input
+        ref="mediaFileInput"
+        class="hidden-file-input"
+        type="file"
+        accept=".jpg,.jpeg,.png,.gif,image/jpeg,image/png,image/gif"
+        @change="uploadForProduct"
+      />
+      <div v-loading="mediaLoading" class="media-picker-grid">
+        <button
+          v-for="asset in mediaAssets"
+          :key="asset.id"
+          type="button"
+          class="media-pick"
+          @click="setProductImage(asset.url)"
+        >
+          <img :src="asset.url" :alt="asset.originalName" loading="lazy" />
+          <span>{{ asset.originalName }}</span>
+        </button>
+      </div>
+      <el-empty v-if="!mediaLoading && mediaAssets.length === 0" description="素材库暂无图片" />
+      <template #footer>
+        <el-button v-if="imageProduct?.imageUrl" type="danger" plain @click="setProductImage(null)">
+          移除主图
+        </el-button>
+        <el-button @click="imageDialogVisible = false">取消</el-button>
       </template>
     </el-dialog>
   </section>

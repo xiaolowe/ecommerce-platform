@@ -36,7 +36,10 @@ public class GatewaySecurityConfiguration {
                         .pathMatchers("/actuator/health/**", "/actuator/info").permitAll()
                         .pathMatchers(HttpMethod.POST, "/api/v1/auth/**").permitAll()
                         .pathMatchers(HttpMethod.GET, "/api/v1/products/**").permitAll()
+                        .pathMatchers(HttpMethod.GET, "/media/**").permitAll()
                         .pathMatchers(HttpMethod.POST, "/api/v1/products/**").hasAuthority("ROLE_ADMIN")
+                        .pathMatchers(HttpMethod.PATCH, "/api/v1/products/**").hasAuthority("ROLE_ADMIN")
+                        .pathMatchers("/api/v1/media/**").hasAuthority("ROLE_ADMIN")
                         .pathMatchers(HttpMethod.POST, "/api/v1/inventory/stocks").hasAuthority("ROLE_ADMIN")
                         .anyExchange().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2

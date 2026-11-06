@@ -36,6 +36,9 @@ function logout() {
         <el-menu-item index="/inventory">
           <span>库存管理</span>
         </el-menu-item>
+        <el-menu-item index="/media">
+          <span>图片素材</span>
+        </el-menu-item>
       </el-menu>
     </el-aside>
 

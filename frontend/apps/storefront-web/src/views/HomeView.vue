@@ -54,7 +54,8 @@ onMounted(async () => {
         class="product-card"
       >
         <div class="product-visual" :class="`tone-${index % 4}`">
-          <span>{{ product.name.slice(0, 1).toUpperCase() }}</span>
+          <img v-if="product.imageUrl" :src="product.imageUrl" :alt="product.name" loading="lazy" decoding="async" />
+          <span v-else>{{ product.name.slice(0, 1).toUpperCase() }}</span>
         </div>
         <div class="product-body">
           <small>{{ product.sku }}</small>

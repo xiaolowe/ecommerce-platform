@@ -13,6 +13,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.net.URI;
 
@@ -43,6 +44,13 @@ public class ApiExceptionHandler {
                 .map(this::formatFieldError)
                 .orElse("Request validation failed");
         return problem(HttpStatus.BAD_REQUEST, "Invalid request", message, request);
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    ProblemDetail handleUploadTooLarge(MaxUploadSizeExceededException exception,
+                                       HttpServletRequest request) {
+        return problem(HttpStatus.PAYLOAD_TOO_LARGE, "Upload too large",
+                "上传文件超过大小限制", request);
     }
 
     @ExceptionHandler(Exception.class)

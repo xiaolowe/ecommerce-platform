@@ -54,7 +54,8 @@ async function buyNow() {
   <section v-if="loading" class="product-detail skeleton-detail"></section>
   <section v-else-if="product" class="product-detail">
     <div class="detail-visual">
-      <span>{{ product.name.slice(0, 1).toUpperCase() }}</span>
+      <img v-if="product.imageUrl" :src="product.imageUrl" :alt="product.name" />
+      <span v-else>{{ product.name.slice(0, 1).toUpperCase() }}</span>
     </div>
     <div class="detail-copy">
       <p class="kicker">{{ product.sku }}</p>

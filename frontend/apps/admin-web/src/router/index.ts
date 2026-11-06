@@ -17,6 +17,11 @@ const router = createRouter({
           name: 'inventory',
           component: () => import('../views/InventoryView.vue'),
         },
+        {
+          path: 'media',
+          name: 'media',
+          component: () => import('../views/MediaLibraryView.vue'),
+        },
       ],
     },
     {
