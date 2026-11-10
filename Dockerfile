@@ -11,6 +11,7 @@ COPY services/catalog-service/pom.xml services/catalog-service/pom.xml
 COPY services/inventory-service/pom.xml services/inventory-service/pom.xml
 COPY services/order-service/pom.xml services/order-service/pom.xml
 COPY services/media-service/pom.xml services/media-service/pom.xml
+COPY services/payment-service/pom.xml services/payment-service/pom.xml
 
 ARG MODULE_PATH
 RUN mvn -B -ntp -pl "${MODULE_PATH}" -am dependency:go-offline

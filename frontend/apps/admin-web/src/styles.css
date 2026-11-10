@@ -188,6 +188,19 @@ a {
   padding-top: 20px;
 }
 
+.filter-row {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) 180px auto auto;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.order-detail {
+  display: grid;
+  gap: 16px;
+  padding: 12px 22px 22px 48px;
+}
+
 .hidden-file-input {
   display: none;
 }
@@ -416,6 +429,10 @@ a {
     grid-template-columns: 1fr;
   }
 
+  .filter-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
   .login-story {
     min-height: 320px;
   }
@@ -444,6 +461,10 @@ a {
   }
 
   .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .filter-row {
     grid-template-columns: 1fr;
   }
 }

@@ -116,6 +116,9 @@ cp -f \
 cp -f \
   "${project_root}/services/media-service/target/media-service-0.1.0-SNAPSHOT.jar" \
   "${runtime_dir}/media-service.jar"
+cp -f \
+  "${project_root}/services/payment-service/target/payment-service-0.1.0-SNAPSHOT.jar" \
+  "${runtime_dir}/payment-service.jar"
 
 mkdir -p "${log_dir}"
 allocate_port GATEWAY_PORT 8080
@@ -130,6 +133,8 @@ allocate_port ORDER_PORT 8084
 order_port="${allocated_port}"
 allocate_port MEDIA_PORT 8085
 media_port="${allocated_port}"
+allocate_port PAYMENT_PORT 8086
+payment_port="${allocated_port}"
 allocate_port ADMIN_PORT 5173
 admin_port="${allocated_port}"
 allocate_port STOREFRONT_PORT 5174
@@ -137,6 +142,7 @@ storefront_port="${allocated_port}"
 
 printf '[2/3] 启动 Java 服务（H2 内存数据库）\n'
 local_jwt_secret="${JWT_SECRET:-local-development-secret-change-before-cloud-1234567890}"
+local_internal_api_key="${INTERNAL_API_KEY:-local-internal-api-key-change-me}"
 
 (
   export SERVER_PORT="${auth_port}"
@@ -166,15 +172,26 @@ pids+=("$!")
   export JWT_SECRET="${local_jwt_secret}"
   export CATALOG_SERVICE_URL="http://localhost:${catalog_port}"
   export INVENTORY_SERVICE_URL="http://localhost:${inventory_port}"
+  export INTERNAL_API_KEY="${local_internal_api_key}"
   exec "${local_jdk_home}/bin/java" -jar "${runtime_dir}/order-service.jar"
 ) >"${log_dir}/order-service.log" 2>&1 &
 pids+=("$!")
 
 (
+  export SERVER_PORT="${payment_port}"
+  export JWT_SECRET="${local_jwt_secret}"
+  export ORDER_SERVICE_URL="http://localhost:${order_port}"
+  export INTERNAL_API_KEY="${local_internal_api_key}"
+  export PAYMENT_TTL_MINUTES="${PAYMENT_TTL_MINUTES:-15}"
+  exec "${local_jdk_home}/bin/java" -jar "${runtime_dir}/payment-service.jar"
+) >"${log_dir}/payment-service.log" 2>&1 &
+pids+=("$!")
+
+(
   export SERVER_PORT="${media_port}"
   export JWT_SECRET="${local_jwt_secret}"
-  export DB_URL="jdbc:h2:file:${project_root}/.data/media-db;MODE=MySQL;DATABASE_TO_LOWER=TRUE"
-  export MEDIA_LOCAL_ROOT="${project_root}/.data/media"
+  export DB_URL="${MEDIA_DB_URL:-jdbc:h2:file:${project_root}/.data/media-db;MODE=MySQL;DATABASE_TO_LOWER=TRUE}"
+  export MEDIA_LOCAL_ROOT="${MEDIA_LOCAL_ROOT:-${project_root}/.data/media}"
   exec "${local_jdk_home}/bin/java" -jar "${runtime_dir}/media-service.jar"
 ) >"${log_dir}/media-service.log" 2>&1 &
 pids+=("$!")
@@ -184,6 +201,7 @@ wait_for_http "catalog-service" "http://localhost:${catalog_port}/actuator/healt
 wait_for_http "inventory-service" "http://localhost:${inventory_port}/actuator/health/readiness"
 wait_for_http "order-service" "http://localhost:${order_port}/actuator/health/readiness"
 wait_for_http "media-service" "http://localhost:${media_port}/actuator/health/readiness"
+wait_for_http "payment-service" "http://localhost:${payment_port}/actuator/health/readiness"
 
 (
   export SERVER_PORT="${gateway_port}"
@@ -193,6 +211,7 @@ wait_for_http "media-service" "http://localhost:${media_port}/actuator/health/re
   export INVENTORY_SERVICE_URL="http://localhost:${inventory_port}"
   export ORDER_SERVICE_URL="http://localhost:${order_port}"
   export MEDIA_SERVICE_URL="http://localhost:${media_port}"
+  export PAYMENT_SERVICE_URL="http://localhost:${payment_port}"
   export CORS_ALLOWED_ORIGINS="http://localhost:${admin_port},http://127.0.0.1:${admin_port},http://localhost:${storefront_port},http://127.0.0.1:${storefront_port}"
   exec "${local_jdk_home}/bin/java" -jar "${runtime_dir}/gateway.jar"
 ) >"${log_dir}/gateway.log" 2>&1 &
@@ -202,8 +221,7 @@ wait_for_http "gateway" "http://localhost:${gateway_port}/actuator/health/readin
 
 printf '[3/3] 启动 Vue 3 开发服务器\n'
 cd "${project_root}/frontend"
-pnpm install --frozen-lockfile --store-dir "${tool_cache_dir}/pnpm-store" \
-  >"${log_dir}/pnpm-install.log" 2>&1
+pnpm install --frozen-lockfile >"${log_dir}/pnpm-install.log" 2>&1
 
 (
   export VITE_API_PROXY_TARGET="http://localhost:${gateway_port}"

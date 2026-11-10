@@ -21,7 +21,7 @@ printf '\n[1/2] 构建并验证 Java 后端\n'
 
 printf '\n[2/2] 构建并验证 Vue 3 前端\n'
 cd "${project_root}/frontend"
-pnpm install --frozen-lockfile --store-dir "${tool_cache_dir}/pnpm-store"
+pnpm install --frozen-lockfile
 pnpm typecheck
 pnpm test
 pnpm build

@@ -49,4 +49,71 @@ order_id="$(printf '%s' "${order}" | json_value id)"
 curl -fsS "${base_url}/api/v1/orders/${order_id}" \
   -H "Authorization: Bearer ${customer_token}" >/dev/null
 
-printf 'Smoke test passed: product=%s order=%s\n' "${product_id}" "${order_id}"
+payment="$(
+  curl -fsS -X POST "${base_url}/api/v1/payments" \
+    -H "Authorization: Bearer ${customer_token}" \
+    -H 'Content-Type: application/json' \
+    -d "{\"orderId\":\"${order_id}\",\"channel\":\"MOCK\"}"
+)"
+payment_no="$(printf '%s' "${payment}" | json_value paymentNo)"
+
+curl -fsS -X POST "${base_url}/api/v1/payments/${payment_no}/mock-pay" \
+  -H "Authorization: Bearer ${customer_token}" >/dev/null
+
+paid_order="$(
+  curl -fsS "${base_url}/api/v1/orders/${order_id}" \
+    -H "Authorization: Bearer ${customer_token}"
+)"
+order_status="$(printf '%s' "${paid_order}" | json_value status)"
+[ "${order_status}" = "PAID" ] || {
+  printf 'Smoke test failed: expected order %s to be PAID, got %s\n' "${order_id}" "${order_status}" >&2
+  exit 1
+}
+
+my_orders="$(
+  curl -fsS "${base_url}/api/v1/orders?status=PAID&page=0&size=20" \
+    -H "Authorization: Bearer ${customer_token}"
+)"
+printf '%s' "${my_orders}" |
+  python3 -c 'import json,sys; data=json.load(sys.stdin); assert data["page"]["totalElements"] >= 1; assert any(item["id"] == sys.argv[1] for item in data["content"])' "${order_id}"
+
+other_customer_token="$(
+  curl -fsS -X POST "${base_url}/api/v1/auth/register" \
+    -H 'Content-Type: application/json' \
+    -d "{\"email\":\"other-${customer_email}\",\"password\":\"Customer123!\",\"displayName\":\"Other Customer\"}" |
+    json_value accessToken
+)"
+other_customer_orders="$(
+  curl -fsS "${base_url}/api/v1/orders" \
+    -H "Authorization: Bearer ${other_customer_token}"
+)"
+printf '%s' "${other_customer_orders}" |
+  python3 -c 'import json,sys; data=json.load(sys.stdin); assert all(item["id"] != sys.argv[1] for item in data["content"])' "${order_id}"
+
+admin_orders="$(
+  curl -fsS "${base_url}/api/v1/admin/orders?keyword=${order_id}" \
+    -H "Authorization: Bearer ${admin_token}"
+)"
+printf '%s' "${admin_orders}" |
+  python3 -c 'import json,sys; data=json.load(sys.stdin); assert data["page"]["totalElements"] >= 1; assert any(item["id"] == sys.argv[1] for item in data["content"])' "${order_id}"
+
+admin_payments="$(
+  curl -fsS "${base_url}/api/v1/admin/payments?keyword=${payment_no}" \
+    -H "Authorization: Bearer ${admin_token}"
+)"
+printf '%s' "${admin_payments}" |
+  python3 -c 'import json,sys; data=json.load(sys.stdin); assert data["page"]["totalElements"] >= 1; assert any(item["paymentNo"] == sys.argv[1] for item in data["content"])' "${payment_no}"
+
+customer_admin_status="$(
+  curl -sS -o /dev/null -w '%{http_code}' \
+    "${base_url}/api/v1/admin/orders" \
+    -H "Authorization: Bearer ${customer_token}"
+)"
+[ "${customer_admin_status}" = "403" ] || {
+  printf 'Smoke test failed: customer admin request expected 403, got %s\n' \
+    "${customer_admin_status}" >&2
+  exit 1
+}
+
+printf 'Smoke test passed: product=%s order=%s payment=%s status=%s\n' \
+  "${product_id}" "${order_id}" "${payment_no}" "${order_status}"

@@ -5,6 +5,7 @@ import CartView from '../views/CartView.vue'
 import HomeView from '../views/HomeView.vue'
 import NotFoundView from '../views/NotFoundView.vue'
 import OrderView from '../views/OrderView.vue'
+import OrdersView from '../views/OrdersView.vue'
 import ProductView from '../views/ProductView.vue'
 
 const router = createRouter({
@@ -14,6 +15,12 @@ const router = createRouter({
     { path: '/products/:id', name: 'product', component: ProductView },
     { path: '/cart', name: 'cart', component: CartView, meta: { requiresAuth: true } },
     { path: '/auth', name: 'auth', component: AuthView },
+    {
+      path: '/orders',
+      name: 'orders',
+      component: OrdersView,
+      meta: { requiresAuth: true },
+    },
     {
       path: '/orders/:id',
       name: 'order',

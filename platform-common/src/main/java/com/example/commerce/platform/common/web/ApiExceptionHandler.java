@@ -3,6 +3,7 @@ package com.example.commerce.platform.common.web;
 import com.example.commerce.platform.common.error.BadRequestException;
 import com.example.commerce.platform.common.error.ConflictException;
 import com.example.commerce.platform.common.error.NotFoundException;
+import com.example.commerce.platform.common.error.UnauthorizedException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +36,11 @@ public class ApiExceptionHandler {
     @ExceptionHandler(BadRequestException.class)
     ProblemDetail handleBadRequest(BadRequestException exception, HttpServletRequest request) {
         return problem(HttpStatus.BAD_REQUEST, "Invalid request", exception.getMessage(), request);
+    }
+
+    @ExceptionHandler(UnauthorizedException.class)
+    ProblemDetail handleUnauthorized(UnauthorizedException exception, HttpServletRequest request) {
+        return problem(HttpStatus.UNAUTHORIZED, "Unauthorized", exception.getMessage(), request);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

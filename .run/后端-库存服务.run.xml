@@ -1,0 +1,14 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="后端-库存服务" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="com.example.commerce.inventory.InventoryServiceApplication" />
+    <module name="inventory-service" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+    <envs>
+      <env name="SERVER_PORT" value="8083" />
+      <env name="JWT_SECRET" value="local-development-secret-change-before-cloud-1234567890" />
+    </envs>
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

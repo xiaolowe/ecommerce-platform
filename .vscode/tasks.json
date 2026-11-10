@@ -1,0 +1,51 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "前端：安装依赖",
+      "type": "shell",
+      "command": "pnpm install --frozen-lockfile",
+      "options": {
+        "cwd": "${workspaceFolder}/frontend"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "前端：运营后台",
+      "type": "shell",
+      "command": "pnpm --filter @ecommerce/admin-web exec vite --host 127.0.0.1 --port 5173",
+      "options": {
+        "cwd": "${workspaceFolder}/frontend"
+      },
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": {
+        "panel": "dedicated",
+        "reveal": "always"
+      }
+    },
+    {
+      "label": "前端：用户商城",
+      "type": "shell",
+      "command": "pnpm --filter @ecommerce/storefront-web exec vite --host 127.0.0.1 --port 5174",
+      "options": {
+        "cwd": "${workspaceFolder}/frontend"
+      },
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": {
+        "panel": "dedicated",
+        "reveal": "always"
+      }
+    },
+    {
+      "label": "前端：启动两个服务",
+      "dependsOrder": "parallel",
+      "dependsOn": [
+        "前端：运营后台",
+        "前端：用户商城"
+      ],
+      "problemMatcher": []
+    }
+  ]
+}

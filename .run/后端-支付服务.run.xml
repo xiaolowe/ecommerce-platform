@@ -1,0 +1,17 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="后端-支付服务" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="com.example.commerce.payment.PaymentServiceApplication" />
+    <module name="payment-service" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+    <envs>
+      <env name="SERVER_PORT" value="8086" />
+      <env name="JWT_SECRET" value="local-development-secret-change-before-cloud-1234567890" />
+      <env name="ORDER_SERVICE_URL" value="http://localhost:8084" />
+      <env name="INTERNAL_API_KEY" value="local-internal-api-key-change-me" />
+      <env name="PAYMENT_TTL_MINUTES" value="15" />
+    </envs>
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

@@ -48,6 +48,12 @@ public class CustomerOrder {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
+    @Column(name = "payment_no", length = 40)
+    private String paymentNo;
+
+    @Column(name = "paid_at")
+    private Instant paidAt;
+
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @JoinColumn(name = "order_id", nullable = false)
     private List<OrderItem> items = new ArrayList<>();
@@ -75,6 +81,22 @@ public class CustomerOrder {
 
     public void cancel() {
         transitionTo(OrderStatus.CANCELLED);
+    }
+
+    public void markPaid(String paymentNo, Instant now) {
+        if (status == OrderStatus.PAID) {
+            if (!paymentNo.equals(this.paymentNo)) {
+                throw new IllegalStateException("Order is already paid by another payment");
+            }
+            return;
+        }
+        if (status != OrderStatus.PENDING_PAYMENT) {
+            throw new IllegalStateException("Order is not waiting for payment");
+        }
+        this.status = OrderStatus.PAID;
+        this.paymentNo = paymentNo;
+        this.paidAt = now;
+        this.updatedAt = now;
     }
 
     private void transitionTo(OrderStatus target) {
@@ -111,6 +133,14 @@ public class CustomerOrder {
 
     public Instant getUpdatedAt() {
         return updatedAt;
+    }
+
+    public String getPaymentNo() {
+        return paymentNo;
+    }
+
+    public Instant getPaidAt() {
+        return paidAt;
     }
 
     public List<OrderItem> getItems() {

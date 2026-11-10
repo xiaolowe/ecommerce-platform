@@ -1,7 +1,9 @@
 .DS_Store
 .idea/
 *.iml
-.vscode/
+.vscode/*
+!.vscode/tasks.json
+!.vscode/extensions.json
 target/
 **/target/
 .tools/

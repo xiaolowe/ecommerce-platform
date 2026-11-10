@@ -1,6 +1,6 @@
 # Ecommerce Platform
 
-Java 21 + Spring Boot 的多服务电商基础骨架。当前版本跑通“注册登录 → 商品上架 → 初始化库存 → 下单预占库存 → 查询订单”的最小闭环，并提供 Docker Compose 与 Kubernetes 部署入口。
+Java 21 + Spring Boot 的多服务电商基础骨架。当前版本跑通“注册登录 → 商品上架 → 初始化库存 → 下单预占库存 → Mock 支付 → 订单已支付”的最小交易闭环，并提供 Docker Compose 与 Kubernetes 部署入口。
 
 ## 服务
 
@@ -12,6 +12,7 @@ Java 21 + Spring Boot 的多服务电商基础骨架。当前版本跑通“注�
 | `services/inventory-service` | 8083 | 可售库存、预占、释放、幂等预占单 |
 | `services/order-service` | 8084 | 订单快照、状态机、库存预占与失败补偿 |
 | `services/media-service` | 8085 | 本地图片上传、素材库、公开图片读取 |
+| `services/payment-service` | 8086 | 支付单、Mock 渠道、订单支付确认同步 |
 | `frontend/admin-web` | 3001 | Vue 3 + Element Plus 运营后台 |
 | `frontend/storefront-web` | 3002 | Vue 3 用户商城、购物袋和订单确认 |
 
@@ -27,9 +28,9 @@ Java 21 + Spring Boot 的多服务电商基础骨架。当前版本跑通“注�
 ./scripts/run-local-h2.sh
 ```
 
-脚本会按需下载 JDK 21、Maven、Node.js 22 和 pnpm，打包后端、启动 5 个 Java 服务，再启动两个 Vue 3 开发服务器。所有工具都放在项目 `.tools` 中，不需要全局安装。首次运行需要联网。
+脚本会按需下载 JDK 21、Maven、Node.js 22 和 pnpm，打包后端、启动 6 个 Java 服务，再启动两个 Vue 3 开发服务器。所有工具都放在项目 `.tools` 中，不需要全局安装。首次运行需要联网。
 
-脚本把 JDK、Node.js、Maven、pnpm、Java 依赖、前端内容仓库和临时下载都限制在项目 `.tools` 与 `frontend/node_modules` 内，不会写入 `~/.m2`、`~/.npm` 或 `~/Library/pnpm`。
+脚本把 JDK、按需下载的 Node.js/pnpm、Maven、Java 依赖和临时下载限制在项目 `.tools` 与 `frontend/node_modules` 内，不会写入 `~/.m2` 或 `~/.npm`。pnpm 的内容仓库使用全局默认位置，不强制写入项目。
 
 如果默认端口已被其他程序占用，脚本会自动向后寻找可用端口，并在启动完成后打印实际访问地址。
 
@@ -145,11 +146,45 @@ pnpm test
 pnpm build
 ```
 
-运营后台包含管理员登录、商品创建和库存管理。用户商城包含商品浏览、商品详情、注册登录、购物袋和订单确认。当前订单服务按单个商品创建订单，多明细购物袋批量下单需要下一阶段扩展订单接口。
+运营后台包含管理员登录、商品创建、库存管理、订单查询和支付记录查询。订单与支付管理接口同时受网关和业务服务两层 `ROLE_ADMIN` 权限保护，运营人员可以按状态和关键字分页检索，并查看订单商品、支付时间及支付同步状态。用户商城包含商品浏览、商品详情、注册登录、购物袋、订单确认、本地 Mock 支付和“我的订单”；用户订单接口按 JWT 中的客户 ID 过滤，只能读取当前用户自己的订单。当前订单服务按单个商品创建订单，多明细购物袋批量下单需要下一阶段扩展订单接口。
+
+支付接口通过网关访问：
+
+```bash
+# 创建支付单，同一订单重复请求会返回同一支付单
+curl -X POST http://localhost:8080/api/v1/payments \
+  -H "Authorization: Bearer <用户 Token>" \
+  -H 'Content-Type: application/json' \
+  -d '{"orderId":"<订单 ID>","channel":"MOCK"}'
+
+# 模拟支付成功，支付服务随后确认订单并推进为 PAID
+curl -X POST http://localhost:8080/api/v1/payments/<支付单号>/mock-pay \
+  -H "Authorization: Bearer <用户 Token>"
+```
+
+Mock 支付不会产生真实扣款。支付服务以订单服务返回的金额和币种创建支付单，支付成功后通过内部令牌调用订单服务；同步失败时由定时任务重试。真实微信、支付宝渠道应实现 `PaymentProvider`，并补充签名验签、回调日志、主动查单、退款与对账。
+
+## IDEA 与 VS Code 联合开发
+
+后端在 IntelliJ IDEA 中启动，前端在 VS Code 中启动：
+
+1. 使用 IDEA 打开项目根目录并导入 Maven 项目。
+2. 在 `Project Structure → Project SDK` 中选择全局 JDK 21。没有全局 JDK 时，也可以临时使用项目内 JDK：
+
+   ```text
+   /Users/xiaolowe/agent/codex/ecommerce-platform/.tools/jdk-21
+   ```
+
+3. 将项目语言级别设置为 Java 21。
+4. 在运行配置中选择“后端-全部服务”，或单独启动某个服务进行调试。
+5. 使用 VS Code 打开同一个项目根目录。
+6. 在 VS Code 中选择 `Terminal → Run Task → 前端：启动两个服务`。
+
+VS Code 任务默认使用全局 Node.js 和 pnpm，pnpm 的内容仓库使用全局默认位置。可通过 `pnpm store path` 查看实际路径。前后端联合开发时不要同时运行 `run-local-h2.sh`，否则会争用 8080～8085、5173、5174 端口。
 
 ## 云上部署
 
-1. 准备四套 MySQL schema，或者同一 MySQL 实例中的四个逻辑库。
+1. 准备六套 MySQL schema，或者同一 MySQL 实例中的六个逻辑库。
 2. 修改 `deploy/k8s/configmap.yaml` 中的数据库地址、域名和 CORS 来源。
 3. 替换 `deploy/k8s/app.yaml` 中的镜像地址。
 4. 从 `deploy/k8s/secrets.env.example` 创建 Kubernetes Secret。
@@ -167,11 +202,11 @@ Secret 必须在 Deployment 启动前创建。生产环境不要把数据库、J
 ## 扩展入口
 
 - 新服务复制一个 `services/*-service` 模块，并保持自己的数据库和迁移目录。
-- 支付服务接收 `PaymentSucceeded` 事件后把订单推进到已支付状态；订单服务当前停在 `PENDING_PAYMENT`。
+- 当前 Mock 支付通过同步内部接口确认订单；真实支付渠道应增加回调日志、签名验签、主动查单和幂等事件消费。
 - 库存超时释放、支付回调和履约通知应使用消息队列、Outbox、消费幂等和死信重试。
 - 生产环境增加服务身份鉴权、mTLS、API 限流、分布式追踪导出和集中日志。
 - 数据库增长后按服务独立扩容，不跨服务共享实体模型或表。
 
 ## 当前边界
 
-这是可运行的基础骨架，不是完整交易系统。支付、优惠、售后、搜索、消息队列、对象存储、运营后台尚未实现。下单链路展示了同步编排和失败补偿，但生产级跨服务恢复需要服务身份 Token、Outbox 和补偿任务共同保证。
+这是可运行的基础骨架，不是完整交易系统。当前支付只覆盖本地 Mock 闭环，尚未接入真实渠道、退款、对账、优惠、售后、搜索和消息队列。下单与支付链路展示了同步编排、内部令牌和失败补偿，但生产级跨服务恢复仍需要服务身份鉴权、Outbox 和可靠的补偿任务共同保证。

@@ -1,0 +1,17 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="后端-订单服务" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="com.example.commerce.order.OrderServiceApplication" />
+    <module name="order-service" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+    <envs>
+      <env name="SERVER_PORT" value="8084" />
+      <env name="JWT_SECRET" value="local-development-secret-change-before-cloud-1234567890" />
+      <env name="CATALOG_SERVICE_URL" value="http://localhost:8082" />
+      <env name="INVENTORY_SERVICE_URL" value="http://localhost:8083" />
+      <env name="INTERNAL_API_KEY" value="local-internal-api-key-change-me" />
+    </envs>
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

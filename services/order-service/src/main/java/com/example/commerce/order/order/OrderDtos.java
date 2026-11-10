@@ -32,9 +32,18 @@ public final class OrderDtos {
             String status,
             long totalCents,
             String currency,
+            String paymentNo,
+            Instant paidAt,
             List<OrderItemResponse> items,
             Instant createdAt,
             Instant updatedAt
+    ) {
+    }
+
+    public record MarkOrderPaidRequest(
+            long amountCents,
+            String currency,
+            String paymentNo
     ) {
     }
 }

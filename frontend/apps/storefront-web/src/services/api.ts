@@ -43,6 +43,8 @@ export interface Order {
   status: string
   totalCents: number
   currency: string
+  paymentNo?: string | null
+  paidAt?: string | null
   items: Array<{
     productId: string
     sku: string
@@ -52,6 +54,22 @@ export interface Order {
   }>
   createdAt: string
   updatedAt: string
+}
+
+export interface Payment {
+  id: string
+  paymentNo: string
+  orderId: string
+  amountCents: number
+  currency: string
+  channel: 'MOCK'
+  status: 'REQUIRES_ACTION' | 'SUCCEEDED' | 'CLOSED' | 'FAILED'
+  providerTradeNo?: string | null
+  orderSynced: boolean
+  confirmPath?: string | null
+  expiresAt: string
+  paidAt?: string | null
+  createdAt: string
 }
 
 export async function login(email: string, password: string) {
@@ -87,5 +105,29 @@ export async function createOrder(productId: string, quantity: number) {
 
 export async function getOrder(id: string) {
   const { data } = await http.get<Order>(`/orders/${id}`)
+  return data
+}
+
+export async function listMyOrders(params: {
+  page?: number
+  size?: number
+  status?: string
+}) {
+  const { data } = await http.get<PageResponse<Order>>('/orders', { params })
+  return data
+}
+
+export async function createPayment(orderId: string) {
+  const { data } = await http.post<Payment>('/payments', { orderId, channel: 'MOCK' })
+  return data
+}
+
+export async function getPayment(paymentNo: string) {
+  const { data } = await http.get<Payment>(`/payments/${paymentNo}`)
+  return data
+}
+
+export async function mockPay(paymentNo: string) {
+  const { data } = await http.post<Payment>(`/payments/${paymentNo}/mock-pay`)
   return data
 }

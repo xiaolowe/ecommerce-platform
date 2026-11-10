@@ -56,6 +56,45 @@ export interface MediaAsset {
   createdAt: string
 }
 
+export type OrderStatus = 'PENDING_STOCK' | 'PENDING_PAYMENT' | 'PAID' | 'CANCELLED'
+
+export interface Order {
+  id: string
+  customerId: string
+  status: OrderStatus
+  totalCents: number
+  currency: string
+  paymentNo?: string | null
+  paidAt?: string | null
+  items: Array<{
+    productId: string
+    sku: string
+    productName: string
+    unitPriceCents: number
+    quantity: number
+  }>
+  createdAt: string
+  updatedAt: string
+}
+
+export type PaymentStatus = 'REQUIRES_ACTION' | 'SUCCEEDED' | 'CLOSED' | 'FAILED'
+
+export interface Payment {
+  id: string
+  paymentNo: string
+  orderId: string
+  amountCents: number
+  currency: string
+  channel: string
+  status: PaymentStatus
+  providerTradeNo?: string | null
+  orderSynced: boolean
+  confirmPath?: string | null
+  expiresAt: string
+  paidAt?: string | null
+  createdAt: string
+}
+
 export async function login(email: string, password: string) {
   const { data } = await http.post<TokenResponse>('/auth/login', { email, password })
   return data
@@ -115,5 +154,25 @@ export async function createStock(productId: string, availableStock: number) {
 
 export async function getStock(productId: string) {
   const { data } = await http.get<Stock>(`/inventory/stocks/${productId}`)
+  return data
+}
+
+export async function listAdminOrders(params: {
+  page?: number
+  size?: number
+  status?: string
+  keyword?: string
+}) {
+  const { data } = await http.get<PageResponse<Order>>('/admin/orders', { params })
+  return data
+}
+
+export async function listAdminPayments(params: {
+  page?: number
+  size?: number
+  status?: string
+  keyword?: string
+}) {
+  const { data } = await http.get<PageResponse<Payment>>('/admin/payments', { params })
   return data
 }

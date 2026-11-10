@@ -24,6 +24,7 @@ function logout() {
       <nav>
         <RouterLink to="/">精选商品</RouterLink>
         <RouterLink to="/cart">购物袋 <b v-if="cart.count">{{ cart.count }}</b></RouterLink>
+        <RouterLink v-if="auth.user" to="/orders">我的订单</RouterLink>
       </nav>
       <div class="account-actions">
         <span v-if="auth.user">你好，{{ auth.user.displayName }}</span>

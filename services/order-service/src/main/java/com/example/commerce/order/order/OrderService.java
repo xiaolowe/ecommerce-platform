@@ -6,6 +6,8 @@ import com.example.commerce.platform.common.error.BadRequestException;
 import com.example.commerce.platform.common.error.NotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -70,6 +72,38 @@ public class OrderService {
                 .orElseThrow(() -> new NotFoundException("Order not found: " + orderId));
     }
 
+    @Transactional(readOnly = true)
+    public Page<OrderResponse> listForAdmin(OrderStatus status, String keyword, Pageable pageable) {
+        return orderRepository.searchForAdmin(status, normalizeKeyword(keyword), pageable)
+                .map(this::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<OrderResponse> listForCustomer(String customerId, OrderStatus status, Pageable pageable) {
+        return orderRepository.searchForCustomer(customerId, status, pageable)
+                .map(this::toResponse);
+    }
+
+    @Transactional
+    public void markPaid(String orderId, OrderDtos.MarkOrderPaidRequest request) {
+        if (request.amountCents() <= 0 || request.currency() == null
+                || request.paymentNo() == null || request.paymentNo().isBlank()) {
+            throw new BadRequestException("Invalid payment confirmation");
+        }
+        CustomerOrder order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new NotFoundException("Order not found: " + orderId));
+        if (order.getTotalCents() != request.amountCents()
+                || !order.getCurrency().equals(request.currency())) {
+            throw new BadRequestException("Payment amount does not match the order");
+        }
+        try {
+            order.markPaid(request.paymentNo(), Instant.now());
+        } catch (IllegalStateException exception) {
+            throw new BadRequestException(exception.getMessage());
+        }
+        orderRepository.saveAndFlush(order);
+    }
+
     private void compensate(CustomerOrder order, String accessToken, RuntimeException cause) {
         try {
             inventoryClient.release(order.getId(), order.getItems().getFirst().getProductId(), accessToken);
@@ -96,9 +130,15 @@ public class OrderService {
                 order.getStatus().name(),
                 order.getTotalCents(),
                 order.getCurrency(),
+                order.getPaymentNo(),
+                order.getPaidAt(),
                 items,
                 order.getCreatedAt(),
                 order.getUpdatedAt()
         );
+    }
+
+    private String normalizeKeyword(String keyword) {
+        return keyword == null || keyword.isBlank() ? null : keyword.trim();
     }
 }

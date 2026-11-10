@@ -1,0 +1,12 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="后端-全部服务" type="CompoundRunConfigurationType">
+    <toRun name="后端-商品服务" type="Application" />
+    <toRun name="后端-媒体服务" type="Application" />
+    <toRun name="后端-库存服务" type="Application" />
+    <toRun name="后端-支付服务" type="Application" />
+    <toRun name="后端-网关" type="Application" />
+    <toRun name="后端-订单服务" type="Application" />
+    <toRun name="后端-认证服务" type="Application" />
+    <method v="2" />
+  </configuration>
+</component>

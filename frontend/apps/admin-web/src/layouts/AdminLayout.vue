@@ -33,6 +33,12 @@ function logout() {
         <el-menu-item index="/products">
           <span>商品管理</span>
         </el-menu-item>
+        <el-menu-item index="/orders">
+          <span>订单管理</span>
+        </el-menu-item>
+        <el-menu-item index="/payments">
+          <span>支付记录</span>
+        </el-menu-item>
         <el-menu-item index="/inventory">
           <span>库存管理</span>
         </el-menu-item>
@@ -46,7 +52,7 @@ function logout() {
       <el-header class="admin-header">
         <div>
           <p class="eyebrow">ECOMMERCE OPERATIONS</p>
-          <h1>商品与库存中枢</h1>
+          <h1>交易运营中枢</h1>
         </div>
         <el-dropdown>
           <span class="user-chip">{{ auth.user?.displayName ?? '管理员' }}</span>

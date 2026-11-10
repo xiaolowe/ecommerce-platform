@@ -1,15 +1,48 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { listProducts, type Product } from '../services/api'
+import {
+  listAdminOrders,
+  listAdminPayments,
+  listProducts,
+  type Order,
+  type OrderStatus,
+} from '../services/api'
 import { formatMoney } from '../utils/money'
 
-const products = ref<Product[]>([])
+const recentOrders = ref<Order[]>([])
+const productTotal = ref(0)
+const orderTotal = ref(0)
+const paymentTotal = ref(0)
 const loading = ref(false)
+
+function statusLabel(status: OrderStatus) {
+  const labels: Record<OrderStatus, string> = {
+    PENDING_STOCK: '处理中',
+    PENDING_PAYMENT: '待支付',
+    PAID: '已支付',
+    CANCELLED: '已取消',
+  }
+  return labels[status]
+}
+
+function statusType(status: OrderStatus) {
+  if (status === 'PAID') return 'success'
+  if (status === 'CANCELLED') return 'info'
+  return 'warning'
+}
 
 onMounted(async () => {
   loading.value = true
   try {
-    products.value = (await listProducts()).content
+    const [productPage, orderPage, paymentPage] = await Promise.all([
+      listProducts(0, 1),
+      listAdminOrders({ page: 0, size: 5 }),
+      listAdminPayments({ page: 0, size: 1 }),
+    ])
+    productTotal.value = productPage.page.totalElements
+    orderTotal.value = orderPage.page.totalElements
+    recentOrders.value = orderPage.content
+    paymentTotal.value = paymentPage.page.totalElements
   } finally {
     loading.value = false
   }
@@ -28,44 +61,41 @@ onMounted(async () => {
 
     <div class="metric-grid" v-loading="loading">
       <article class="metric-card accent">
-        <span>在售商品</span>
-        <strong>{{ products.filter((item) => item.status === 'ACTIVE').length }}</strong>
+        <span>商品总数</span>
+        <strong>{{ productTotal }}</strong>
         <small>来自商品服务</small>
       </article>
       <article class="metric-card">
-        <span>商品总价均值</span>
-        <strong>
-          {{
-            products.length
-              ? formatMoney(products.reduce((sum, item) => sum + item.priceCents, 0) / products.length)
-              : '—'
-          }}
-        </strong>
-        <small>按当前页数据计算</small>
+        <span>订单总数</span>
+        <strong>{{ orderTotal }}</strong>
+        <small>来自订单服务</small>
       </article>
       <article class="metric-card">
-        <span>交易链路</span>
-        <strong>PENDING</strong>
-        <small>订单等待支付模块接入</small>
+        <span>支付记录</span>
+        <strong>{{ paymentTotal }}</strong>
+        <small>来自支付服务</small>
       </article>
     </div>
 
     <div class="panel">
       <div class="panel-heading">
-        <h3>当前商品</h3>
-        <RouterLink to="/products" class="text-link">管理商品</RouterLink>
+        <h3>最近订单</h3>
+        <RouterLink to="/orders" class="text-link">管理订单</RouterLink>
       </div>
-      <el-empty v-if="!loading && products.length === 0" description="还没有商品" />
-      <el-table v-else :data="products.slice(0, 5)">
-        <el-table-column prop="sku" label="SKU" width="150" />
-        <el-table-column prop="name" label="商品名称" min-width="180" />
-        <el-table-column label="价格" width="130">
-          <template #default="{ row }">{{ formatMoney(row.priceCents, row.currency) }}</template>
+      <el-empty v-if="!loading && recentOrders.length === 0" description="还没有订单" />
+      <el-table v-else :data="recentOrders">
+        <el-table-column prop="id" label="订单号" min-width="220" show-overflow-tooltip />
+        <el-table-column prop="customerId" label="客户 ID" min-width="180" show-overflow-tooltip />
+        <el-table-column label="金额" width="130">
+          <template #default="{ row }">{{ formatMoney(row.totalCents, row.currency) }}</template>
         </el-table-column>
-        <el-table-column label="状态" width="100">
+        <el-table-column label="状态" width="110">
           <template #default="{ row }">
-            <el-tag :type="row.status === 'ACTIVE' ? 'success' : 'info'">{{ row.status }}</el-tag>
+            <el-tag :type="statusType(row.status)">{{ statusLabel(row.status) }}</el-tag>
           </template>
+        </el-table-column>
+        <el-table-column label="下单时间" width="180">
+          <template #default="{ row }">{{ new Date(row.createdAt).toLocaleString('zh-CN') }}</template>
         </el-table-column>
       </el-table>
     </div>

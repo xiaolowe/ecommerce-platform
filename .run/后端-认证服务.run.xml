@@ -1,0 +1,16 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="后端-认证服务" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="com.example.commerce.auth.AuthServiceApplication" />
+    <module name="auth-service" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+    <envs>
+      <env name="SERVER_PORT" value="8081" />
+      <env name="JWT_SECRET" value="local-development-secret-change-before-cloud-1234567890" />
+      <env name="BOOTSTRAP_ADMIN_EMAIL" value="admin@example.com" />
+      <env name="BOOTSTRAP_ADMIN_PASSWORD" value="Admin123!ChangeMe" />
+    </envs>
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

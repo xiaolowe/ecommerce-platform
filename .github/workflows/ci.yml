@@ -56,6 +56,7 @@ jobs:
           - services/inventory-service
           - services/order-service
           - services/media-service
+          - services/payment-service
     steps:
       - uses: actions/checkout@v4
       - uses: docker/build-push-action@v6
