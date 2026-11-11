@@ -2,9 +2,9 @@ package com.example.commerce.inventory;
 
 import com.example.commerce.inventory.reservation.ReservationStatus;
 import com.example.commerce.inventory.reservation.StockReservation;
-import com.example.commerce.inventory.reservation.StockReservationRepository;
+import com.example.commerce.inventory.reservation.StockReservationMapper;
 import com.example.commerce.inventory.stock.Stock;
-import com.example.commerce.inventory.stock.StockRepository;
+import com.example.commerce.inventory.stock.StockMapper;
 import com.example.commerce.platform.common.error.BadRequestException;
 import com.example.commerce.platform.common.error.ConflictException;
 import com.example.commerce.platform.common.error.NotFoundException;
@@ -26,34 +26,35 @@ public class InventoryService {
 
     private static final Duration RESERVATION_TTL = Duration.ofMinutes(30);
 
-    private final StockRepository stockRepository;
-    private final StockReservationRepository reservationRepository;
+    private final StockMapper stockMapper;
+    private final StockReservationMapper reservationMapper;
 
-    public InventoryService(StockRepository stockRepository,
-                            StockReservationRepository reservationRepository) {
-        this.stockRepository = stockRepository;
-        this.reservationRepository = reservationRepository;
+    public InventoryService(StockMapper stockMapper,
+                            StockReservationMapper reservationMapper) {
+        this.stockMapper = stockMapper;
+        this.reservationMapper = reservationMapper;
     }
 
     @Transactional
     public StockResponse createStock(CreateStockRequest request) {
-        if (stockRepository.existsById(request.productId())) {
+        if (stockMapper.countById(request.productId()) > 0) {
             throw new ConflictException("Stock already exists for product: " + request.productId());
         }
-        Stock stock = stockRepository.save(new Stock(request.productId(), request.availableStock(), Instant.now()));
+        Stock stock = new Stock(request.productId(), request.availableStock(), Instant.now());
+        stockMapper.insert(stock);
         return stockResponse(stock);
     }
 
     @Transactional(readOnly = true)
     public StockResponse getStock(String productId) {
-        return stockRepository.findById(productId)
+        return stockMapper.findById(productId)
                 .map(this::stockResponse)
                 .orElseThrow(() -> new NotFoundException("Stock not found for product: " + productId));
     }
 
     @Transactional
     public ReservationResponse reserve(ReserveStockRequest request) {
-        StockReservation existing = reservationRepository
+        StockReservation existing = reservationMapper
                 .findByOrderIdAndProductId(request.orderId(), request.productId())
                 .orElse(null);
         if (existing != null) {
@@ -63,41 +64,43 @@ public class InventoryService {
             return reservationResponse(existing);
         }
 
-        int updated = stockRepository.reserve(request.productId(), request.quantity(), Instant.now());
+        int updated = stockMapper.reserve(request.productId(), request.quantity(), Instant.now());
         if (updated == 0) {
-            if (!stockRepository.existsById(request.productId())) {
+            if (stockMapper.countById(request.productId()) == 0) {
                 throw new NotFoundException("Stock not found for product: " + request.productId());
             }
             throw new ConflictException("Insufficient stock for product: " + request.productId());
         }
 
         Instant now = Instant.now();
-        StockReservation reservation = reservationRepository.save(new StockReservation(
+        StockReservation reservation = new StockReservation(
                 UUID.randomUUID().toString(),
                 request.orderId(),
                 request.productId(),
                 request.quantity(),
                 now.plus(RESERVATION_TTL),
                 now
-        ));
+        );
+        reservationMapper.insert(reservation);
         return reservationResponse(reservation);
     }
 
     @Transactional
     public ReservationResponse release(ReleaseStockRequest request) {
-        StockReservation reservation = reservationRepository
-                .findByOrderIdAndProductId(request.orderId(), request.productId())
+        StockReservation reservation = reservationMapper
+                .findByOrderIdAndProductIdForUpdate(request.orderId(), request.productId())
                 .orElseThrow(() -> new NotFoundException("Reservation not found"));
         if (reservation.getStatus() == ReservationStatus.RELEASED) {
             return reservationResponse(reservation);
         }
 
-        int updated = stockRepository.release(
+        int updated = stockMapper.release(
                 reservation.getProductId(), reservation.getQuantity(), Instant.now());
         if (updated == 0) {
             throw new BadRequestException("Reserved stock cannot be released");
         }
         reservation.release(Instant.now());
+        reservationMapper.updateRelease(reservation.getId(), reservation.getReleasedAt());
         return reservationResponse(reservation);
     }
 

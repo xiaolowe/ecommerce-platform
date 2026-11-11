@@ -66,6 +66,10 @@ export interface Order {
   currency: string
   paymentNo?: string | null
   paidAt?: string | null
+  paymentExpiresAt?: string | null
+  cancelledAt?: string | null
+  cancellationReason?: string | null
+  stockReleased: boolean
   items: Array<{
     productId: string
     sku: string
@@ -89,6 +93,9 @@ export interface Payment {
   status: PaymentStatus
   providerTradeNo?: string | null
   orderSynced: boolean
+  orderSyncAttempts: number
+  lastOrderSyncError?: string | null
+  manualReviewRequired: boolean
   confirmPath?: string | null
   expiresAt: string
   paidAt?: string | null

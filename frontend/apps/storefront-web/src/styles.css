@@ -732,7 +732,8 @@ a {
 }
 
 .customer-order-card > header small,
-.customer-order-card > footer span {
+.customer-order-card > footer span,
+.customer-order-card > footer small {
   color: #75857f;
   font-size: 12px;
 }

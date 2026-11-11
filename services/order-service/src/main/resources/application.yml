@@ -9,12 +9,13 @@ spring:
     url: ${DB_URL:jdbc:h2:mem:orders;MODE=MySQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE}
     username: ${DB_USERNAME:sa}
     password: ${DB_PASSWORD:}
-  jpa:
-    open-in-view: false
-    hibernate:
-      ddl-auto: none
   flyway:
     enabled: true
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
 
 security:
   jwt:
@@ -23,6 +24,9 @@ security:
 internal:
   api-key: ${INTERNAL_API_KEY:local-internal-api-key-change-me}
 
+order:
+  payment-ttl-seconds: ${ORDER_PAYMENT_TTL_SECONDS:900}
+
 clients:
   catalog:
     base-url: ${CATALOG_SERVICE_URL:http://localhost:8082}
@@ -30,8 +34,8 @@ clients:
     base-url: ${INVENTORY_SERVICE_URL:http://localhost:8083}
 
 jobs:
-  order-reconciliation:
-    delay-ms: ${ORDER_RECONCILIATION_DELAY_MS:120000}
+  order-expiration:
+    delay-ms: ${ORDER_RECONCILIATION_DELAY_MS:30000}
 
 management:
   endpoints:

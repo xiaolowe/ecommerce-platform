@@ -34,6 +34,10 @@ public final class OrderDtos {
             String currency,
             String paymentNo,
             Instant paidAt,
+            Instant paymentExpiresAt,
+            Instant cancelledAt,
+            String cancellationReason,
+            boolean stockReleased,
             List<OrderItemResponse> items,
             Instant createdAt,
             Instant updatedAt

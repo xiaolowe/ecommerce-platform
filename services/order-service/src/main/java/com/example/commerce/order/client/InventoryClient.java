@@ -12,17 +12,20 @@ import org.springframework.web.client.RestClientResponseException;
 public class InventoryClient {
 
     private final RestClient restClient;
+    private final String internalApiKey;
 
     public InventoryClient(RestClient.Builder builder,
-                           @Value("${clients.inventory.base-url:http://localhost:8083}") String baseUrl) {
+                           @Value("${clients.inventory.base-url:http://localhost:8083}") String baseUrl,
+                           @Value("${internal.api-key:local-internal-api-key-change-me}") String internalApiKey) {
         this.restClient = builder.baseUrl(baseUrl).build();
+        this.internalApiKey = internalApiKey;
     }
 
-    public ReservationResult reserve(String orderId, String productId, long quantity, String accessToken) {
+    public ReservationResult reserve(String orderId, String productId, long quantity) {
         try {
             return restClient.post()
-                    .uri("/api/v1/inventory/reservations")
-                    .header("Authorization", "Bearer " + accessToken)
+                    .uri("/internal/inventory/reservations")
+                    .header("X-Internal-Token", internalApiKey)
                     .body(new ReserveRequest(orderId, productId, quantity))
                     .retrieve()
                     .body(ReservationResult.class);
@@ -37,13 +40,20 @@ public class InventoryClient {
         }
     }
 
-    public void release(String orderId, String productId, String accessToken) {
-        restClient.post()
-                .uri("/api/v1/inventory/reservations/release")
-                .header("Authorization", "Bearer " + accessToken)
-                .body(new ReleaseRequest(orderId, productId))
-                .retrieve()
-                .toBodilessEntity();
+    public void release(String orderId, String productId) {
+        try {
+            restClient.post()
+                    .uri("/internal/inventory/reservations/release")
+                    .header("X-Internal-Token", internalApiKey)
+                    .body(new ReleaseRequest(orderId, productId))
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (RestClientResponseException exception) {
+            if (exception.getStatusCode().value() == 404) {
+                return;
+            }
+            throw exception;
+        }
     }
 
     private record ReserveRequest(String orderId, String productId, long quantity) {

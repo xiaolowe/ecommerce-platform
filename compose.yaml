@@ -64,6 +64,7 @@ services:
       DB_USERNAME: ecommerce
       DB_PASSWORD: ${DB_PASSWORD:-local-db-password}
       JWT_SECRET: ${JWT_SECRET:-local-development-secret-change-before-cloud-1234567890}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-local-internal-api-key-change-me}
     depends_on:
       mysql:
         condition: service_healthy
@@ -83,6 +84,7 @@ services:
       CATALOG_SERVICE_URL: http://catalog-service:8082
       INVENTORY_SERVICE_URL: http://inventory-service:8083
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:-local-internal-api-key-change-me}
+      ORDER_PAYMENT_TTL_SECONDS: ${ORDER_PAYMENT_TTL_SECONDS:-900}
     depends_on:
       mysql:
         condition: service_healthy

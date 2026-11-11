@@ -40,11 +40,13 @@ public class InventoryController {
     }
 
     @PostMapping("/reservations")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     ReservationResponse reserve(@Valid @RequestBody ReserveStockRequest request) {
         return inventoryService.reserve(request);
     }
 
     @PostMapping("/reservations/release")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     ReservationResponse release(@Valid @RequestBody ReleaseStockRequest request) {
         return inventoryService.release(request);
     }

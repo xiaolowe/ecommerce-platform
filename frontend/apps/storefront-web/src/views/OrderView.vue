@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { createPayment, getOrder, mockPay, type Order } from '../services/api'
+import { cancelOrder, createPayment, getOrder, mockPay, type Order } from '../services/api'
 import { apiErrorMessage } from '../services/http'
 import { formatMoney } from '../utils/money'
 
@@ -10,6 +10,7 @@ const order = ref<Order | null>(null)
 const error = ref('')
 const notice = ref('')
 const paying = ref(false)
+const cancelling = ref(false)
 
 const statusLabel = computed(() => {
   const labels: Record<string, string> = {
@@ -42,11 +43,30 @@ async function pay() {
     await loadOrder()
     notice.value = result.orderSynced
       ? '支付成功，订单已更新为已支付。'
-      : '支付成功，订单状态正在同步，请稍后刷新。'
+      : result.manualReviewRequired
+        ? '支付已完成，但订单已关闭，平台将进行人工退款处理。'
+        : '支付成功，订单状态正在同步，请稍后刷新。'
   } catch (reason) {
     error.value = apiErrorMessage(reason)
   } finally {
     paying.value = false
+  }
+}
+
+async function cancel() {
+  if (!order.value || !window.confirm('确认取消这笔订单？库存会自动释放。')) {
+    return
+  }
+  cancelling.value = true
+  error.value = ''
+  notice.value = ''
+  try {
+    order.value = await cancelOrder(order.value.id)
+    notice.value = '订单已取消，库存正在自动释放。'
+  } catch (reason) {
+    error.value = apiErrorMessage(reason)
+  } finally {
+    cancelling.value = false
   }
 }
 
@@ -65,6 +85,9 @@ onMounted(async () => {
       <p class="kicker">ORDER CONFIRMATION</p>
       <h1>{{ order.status === 'PAID' ? '支付完成' : '订单已创建' }}</h1>
       <p class="order-number">订单号 {{ order.id }}</p>
+      <p v-if="order.paymentExpiresAt && order.status === 'PENDING_PAYMENT'" class="order-number">
+        支付截止时间：{{ formatDate(order.paymentExpiresAt) }}
+      </p>
       <div class="order-summary">
         <div v-for="item in order.items" :key="item.productId">
           <span>{{ item.productName }} × {{ item.quantity }}</span>
@@ -89,12 +112,19 @@ onMounted(async () => {
       </div>
       <p v-if="notice" class="notice success">{{ notice }}</p>
       <p v-if="error" class="notice">{{ error }}</p>
+      <p v-if="order.cancelledAt" class="notice neutral">
+        订单已于 {{ formatDate(order.cancelledAt) }} 取消，原因：{{ order.cancellationReason === 'PAYMENT_TIMEOUT' ? '支付超时' : '用户取消' }}。
+        库存状态：{{ order.stockReleased ? '已释放' : '释放中' }}。
+      </p>
       <template v-if="order.status === 'PENDING_PAYMENT'">
         <p class="notice neutral">
           当前为本地 Mock 支付，不会产生真实扣款。支付金额以订单金额为准。
         </p>
         <button class="primary-button" :disabled="paying" @click="pay">
           {{ paying ? '支付处理中…' : `Mock 支付 ${formatMoney(order.totalCents, order.currency)}` }}
+        </button>
+        <button class="secondary-button" :disabled="cancelling" @click="cancel">
+          {{ cancelling ? '取消中…' : '取消订单' }}
         </button>
       </template>
       <div class="order-actions">

@@ -108,6 +108,14 @@ onMounted(load)
                 <el-descriptions-item label="客户 ID">{{ row.customerId }}</el-descriptions-item>
                 <el-descriptions-item label="支付单号">{{ row.paymentNo ?? '—' }}</el-descriptions-item>
                 <el-descriptions-item label="支付时间">{{ formatDate(row.paidAt) }}</el-descriptions-item>
+                <el-descriptions-item label="支付截止">{{ formatDate(row.paymentExpiresAt) }}</el-descriptions-item>
+                <el-descriptions-item label="取消时间">{{ formatDate(row.cancelledAt) }}</el-descriptions-item>
+                <el-descriptions-item label="取消原因">
+                  {{ row.cancellationReason === 'PAYMENT_TIMEOUT' ? '支付超时' : row.cancellationReason ?? '—' }}
+                </el-descriptions-item>
+                <el-descriptions-item label="库存释放">
+                  {{ row.stockReleased ? '已释放' : '未释放 / 待重试' }}
+                </el-descriptions-item>
                 <el-descriptions-item label="创建时间">{{ formatDate(row.createdAt) }}</el-descriptions-item>
                 <el-descriptions-item label="更新时间">{{ formatDate(row.updatedAt) }}</el-descriptions-item>
               </el-descriptions>

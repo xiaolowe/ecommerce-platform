@@ -117,6 +117,12 @@ onMounted(load)
           <div>
             <span>合计</span>
             <strong>{{ formatMoney(order.totalCents, order.currency) }}</strong>
+            <small v-if="order.status === 'PENDING_PAYMENT' && order.paymentExpiresAt">
+              请在 {{ formatDate(order.paymentExpiresAt) }} 前支付
+            </small>
+            <small v-if="order.cancelledAt">
+              {{ order.cancellationReason === 'PAYMENT_TIMEOUT' ? '支付超时自动取消' : '订单已取消' }}
+            </small>
           </div>
           <RouterLink :to="{ name: 'order', params: { id: order.id } }" class="text-link">
             {{ order.status === 'PENDING_PAYMENT' ? '去支付' : '查看详情' }}

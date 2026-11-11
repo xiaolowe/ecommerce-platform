@@ -13,16 +13,32 @@ public class OrderReconciliationJob {
 
     private static final Logger log = LoggerFactory.getLogger(OrderReconciliationJob.class);
 
-    private final CustomerOrderRepository orderRepository;
+    private final CustomerOrderMapper orderMapper;
+    private final OrderService orderService;
 
-    public OrderReconciliationJob(CustomerOrderRepository orderRepository) {
-        this.orderRepository = orderRepository;
+    public OrderReconciliationJob(CustomerOrderMapper orderMapper,
+                                  OrderService orderService) {
+        this.orderMapper = orderMapper;
+        this.orderService = orderService;
     }
 
-    @Scheduled(fixedDelayString = "${jobs.order-reconciliation.delay-ms:120000}")
-    public void cancelStaleStockPendingOrders() {
+    @Scheduled(fixedDelayString = "${jobs.order-expiration.delay-ms:30000}")
+    public void reconcileOrders() {
+        orderService.findExpiredPaymentOrders().forEach(order -> {
+            try {
+                orderService.cancelExpiredOrder(order.getId());
+            } catch (RuntimeException exception) {
+                log.error("Failed to cancel expired order {}", order.getId(), exception);
+            }
+        });
+        try {
+            orderService.retryPendingStockReleases();
+        } catch (RuntimeException exception) {
+            log.error("Failed to retry cancelled order inventory releases", exception);
+        }
+
         Instant cutoff = Instant.now().minus(2, ChronoUnit.MINUTES);
-        orderRepository.findTop100ByStatusAndCreatedAtBeforeOrderByCreatedAtAsc(OrderStatus.PENDING_STOCK, cutoff)
+        orderMapper.findPendingStockBefore(cutoff, 100)
                 .forEach(order -> {
                     try {
                         // A system-to-system token is required for production recovery.

@@ -45,6 +45,10 @@ export interface Order {
   currency: string
   paymentNo?: string | null
   paidAt?: string | null
+  paymentExpiresAt?: string | null
+  cancelledAt?: string | null
+  cancellationReason?: string | null
+  stockReleased: boolean
   items: Array<{
     productId: string
     sku: string
@@ -66,6 +70,9 @@ export interface Payment {
   status: 'REQUIRES_ACTION' | 'SUCCEEDED' | 'CLOSED' | 'FAILED'
   providerTradeNo?: string | null
   orderSynced: boolean
+  orderSyncAttempts: number
+  lastOrderSyncError?: string | null
+  manualReviewRequired: boolean
   confirmPath?: string | null
   expiresAt: string
   paidAt?: string | null
@@ -105,6 +112,11 @@ export async function createOrder(productId: string, quantity: number) {
 
 export async function getOrder(id: string) {
   const { data } = await http.get<Order>(`/orders/${id}`)
+  return data
+}
+
+export async function cancelOrder(id: string) {
+  const { data } = await http.post<Order>(`/orders/${id}/cancel`)
   return data
 }
 

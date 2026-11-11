@@ -1,67 +1,47 @@
 package com.example.commerce.order.order;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
-import jakarta.persistence.Version;
-
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-@Entity
-@Table(name = "customer_orders")
 public class CustomerOrder {
 
-    @Id
-    @Column(length = 36)
     private String id;
 
-    @Column(name = "customer_id", nullable = false, length = 36)
     private String customerId;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 24)
     private OrderStatus status;
 
-    @Column(name = "total_cents", nullable = false)
     private long totalCents;
 
-    @Column(nullable = false, length = 3)
     private String currency;
 
-    @Version
-    @Column(nullable = false)
     private long version;
 
-    @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
-    @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    @Column(name = "payment_no", length = 40)
     private String paymentNo;
 
-    @Column(name = "paid_at")
     private Instant paidAt;
 
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
-    @JoinColumn(name = "order_id", nullable = false)
+    private Instant paymentExpiresAt;
+
+    private Instant cancelledAt;
+
+    private String cancellationReason;
+
+    private boolean stockReleased;
+
     private List<OrderItem> items = new ArrayList<>();
 
-    protected CustomerOrder() {
+    public CustomerOrder() {
     }
 
-    public CustomerOrder(String id, String customerId, long totalCents, String currency, Instant createdAt) {
+    public CustomerOrder(String id, String customerId, long totalCents, String currency,
+                         Instant createdAt, Instant paymentExpiresAt) {
         this.id = id;
         this.customerId = customerId;
         this.status = OrderStatus.PENDING_STOCK;
@@ -69,6 +49,8 @@ public class CustomerOrder {
         this.currency = currency;
         this.createdAt = createdAt;
         this.updatedAt = createdAt;
+        this.paymentExpiresAt = paymentExpiresAt;
+        this.stockReleased = false;
     }
 
     public void addItem(OrderItem item) {
@@ -79,8 +61,23 @@ public class CustomerOrder {
         transitionTo(OrderStatus.PENDING_PAYMENT);
     }
 
-    public void cancel() {
-        transitionTo(OrderStatus.CANCELLED);
+    public boolean cancel(String reason, Instant now) {
+        if (status == OrderStatus.CANCELLED) {
+            return false;
+        }
+        if (status != OrderStatus.PENDING_PAYMENT && status != OrderStatus.PENDING_STOCK) {
+            throw new IllegalStateException("Order cannot be cancelled from its current state");
+        }
+        this.status = OrderStatus.CANCELLED;
+        this.cancelledAt = now;
+        this.cancellationReason = reason;
+        this.updatedAt = now;
+        return true;
+    }
+
+    public void markStockReleased(Instant now) {
+        this.stockReleased = true;
+        this.updatedAt = now;
     }
 
     public void markPaid(String paymentNo, Instant now) {
@@ -111,36 +108,112 @@ public class CustomerOrder {
         return id;
     }
 
+    public void setId(String id) {
+        this.id = id;
+    }
+
     public String getCustomerId() {
         return customerId;
+    }
+
+    public void setCustomerId(String customerId) {
+        this.customerId = customerId;
     }
 
     public OrderStatus getStatus() {
         return status;
     }
 
+    public void setStatus(OrderStatus status) {
+        this.status = status;
+    }
+
     public long getTotalCents() {
         return totalCents;
+    }
+
+    public void setTotalCents(long totalCents) {
+        this.totalCents = totalCents;
     }
 
     public String getCurrency() {
         return currency;
     }
 
+    public void setCurrency(String currency) {
+        this.currency = currency;
+    }
+
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public void setCreatedAt(Instant createdAt) {
+        this.createdAt = createdAt;
     }
 
     public Instant getUpdatedAt() {
         return updatedAt;
     }
 
+    public void setUpdatedAt(Instant updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
     public String getPaymentNo() {
         return paymentNo;
     }
 
+    public void setPaymentNo(String paymentNo) {
+        this.paymentNo = paymentNo;
+    }
+
     public Instant getPaidAt() {
         return paidAt;
+    }
+
+    public void setPaidAt(Instant paidAt) {
+        this.paidAt = paidAt;
+    }
+
+    public Instant getPaymentExpiresAt() {
+        return paymentExpiresAt;
+    }
+
+    public void setPaymentExpiresAt(Instant paymentExpiresAt) {
+        this.paymentExpiresAt = paymentExpiresAt;
+    }
+
+    public Instant getCancelledAt() {
+        return cancelledAt;
+    }
+
+    public void setCancelledAt(Instant cancelledAt) {
+        this.cancelledAt = cancelledAt;
+    }
+
+    public String getCancellationReason() {
+        return cancellationReason;
+    }
+
+    public void setCancellationReason(String cancellationReason) {
+        this.cancellationReason = cancellationReason;
+    }
+
+    public boolean isStockReleased() {
+        return stockReleased;
+    }
+
+    public void setStockReleased(boolean stockReleased) {
+        this.stockReleased = stockReleased;
+    }
+
+    public void setItems(List<OrderItem> items) {
+        this.items = items == null ? new ArrayList<>() : items;
+    }
+
+    public void setVersion(long version) {
+        this.version = version;
     }
 
     public List<OrderItem> getItems() {

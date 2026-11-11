@@ -1,18 +1,21 @@
 package com.example.commerce.payment.payment;
 
 import com.example.commerce.payment.client.OrderClient;
+import com.example.commerce.platform.common.error.ConflictException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.data.domain.PageRequest;
+
+import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static com.example.commerce.payment.payment.PaymentDtos.CreatePaymentRequest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.doThrow;
 
 @SpringBootTest
 class PaymentServiceTest {
@@ -21,21 +24,22 @@ class PaymentServiceTest {
     private PaymentService paymentService;
 
     @Autowired
-    private PaymentRepository paymentRepository;
+    private PaymentMapper paymentMapper;
 
     @MockBean
     private OrderClient orderClient;
 
     @BeforeEach
     void clearPayments() {
-        paymentRepository.deleteAll();
+        paymentMapper.deleteAll();
     }
 
     @Test
     void createsPaymentFromOrderAndCompletesMockPayment() {
         when(orderClient.getOrder("order-1", "access-token"))
                 .thenReturn(new OrderClient.OrderSnapshot(
-                        "order-1", "customer-1", "PENDING_PAYMENT", 3998, "CNY"));
+                        "order-1", "customer-1", "PENDING_PAYMENT", 3998, "CNY",
+                        Instant.now().plusSeconds(900)));
 
         var created = paymentService.create(
                 "customer-1", "access-token", new CreatePaymentRequest("order-1", "MOCK"));
@@ -53,15 +57,16 @@ class PaymentServiceTest {
         verify(orderClient).markOrderPaid("order-1", 3998, "CNY", created.paymentNo());
 
         var adminPage = paymentService.listForAdmin(
-                PaymentStatus.SUCCEEDED, created.paymentNo(), PageRequest.of(0, 20));
-        assertThat(adminPage.getContent()).anyMatch(item -> item.paymentNo().equals(created.paymentNo()));
+                PaymentStatus.SUCCEEDED, created.paymentNo(), 0, 20);
+        assertThat(adminPage.content()).anyMatch(item -> item.paymentNo().equals(created.paymentNo()));
     }
 
     @Test
     void reusesExistingPaymentForTheSameOrder() {
         when(orderClient.getOrder("order-2", "access-token"))
                 .thenReturn(new OrderClient.OrderSnapshot(
-                        "order-2", "customer-1", "PENDING_PAYMENT", 9900, "CNY"));
+                        "order-2", "customer-1", "PENDING_PAYMENT", 9900, "CNY",
+                        Instant.now().plusSeconds(900)));
 
         var first = paymentService.create(
                 "customer-1", "access-token", new CreatePaymentRequest("order-2", "MOCK"));
@@ -69,7 +74,7 @@ class PaymentServiceTest {
                 "customer-1", "access-token", new CreatePaymentRequest("order-2", "MOCK"));
 
         assertThat(second.paymentNo()).isEqualTo(first.paymentNo());
-        assertThat(paymentRepository.count()).isEqualTo(1);
+        assertThat(paymentMapper.countAdmin(null, null)).isEqualTo(1);
     }
 
     @Test
@@ -77,5 +82,26 @@ class PaymentServiceTest {
         assertThatThrownBy(() -> paymentService.create(
                 "customer-1", "access-token", new CreatePaymentRequest("order-3", "ALIPAY")))
                 .hasMessageContaining("Unsupported payment channel");
+    }
+
+    @Test
+    void marksLatePaymentForManualReviewWhenOrderWasClosed() {
+        when(orderClient.getOrder("order-4", "access-token"))
+                .thenReturn(new OrderClient.OrderSnapshot(
+                        "order-4", "customer-1", "PENDING_PAYMENT", 1200, "CNY",
+                        Instant.now().plusSeconds(900)));
+        var created = paymentService.create(
+                "customer-1", "access-token", new CreatePaymentRequest("order-4", "MOCK"));
+        doThrow(new ConflictException("Order cannot be marked paid"))
+                .when(orderClient)
+                .markOrderPaid("order-4", 1200, "CNY", created.paymentNo());
+
+        var result = paymentService.mockPay("customer-1", created.paymentNo());
+
+        assertThat(result.status()).isEqualTo("SUCCEEDED");
+        assertThat(result.orderSynced()).isFalse();
+        assertThat(result.manualReviewRequired()).isTrue();
+        assertThat(result.orderSyncAttempts()).isEqualTo(1);
+        assertThat(result.lastOrderSyncError()).contains("cannot be marked paid");
     }
 }

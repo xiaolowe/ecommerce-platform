@@ -1,7 +1,7 @@
 package com.example.commerce.auth.auth;
 
 import com.example.commerce.auth.user.UserAccount;
-import com.example.commerce.auth.user.UserAccountRepository;
+import com.example.commerce.auth.user.UserAccountMapper;
 import com.example.commerce.auth.user.UserRole;
 import com.example.commerce.platform.common.error.BadRequestException;
 import com.example.commerce.platform.common.error.ConflictException;
@@ -22,13 +22,13 @@ import static com.example.commerce.auth.auth.AuthDtos.UserResponse;
 @Service
 public class AuthService {
 
-    private final UserAccountRepository userRepository;
+    private final UserAccountMapper userMapper;
     private final PasswordEncoder passwordEncoder;
     private final TokenService tokenService;
 
-    public AuthService(UserAccountRepository userRepository, PasswordEncoder passwordEncoder,
+    public AuthService(UserAccountMapper userMapper, PasswordEncoder passwordEncoder,
                        TokenService tokenService) {
-        this.userRepository = userRepository;
+        this.userMapper = userMapper;
         this.passwordEncoder = passwordEncoder;
         this.tokenService = tokenService;
     }
@@ -36,7 +36,7 @@ public class AuthService {
     @Transactional
     public TokenResponse register(RegisterRequest request) {
         String email = normalizeEmail(request.email());
-        if (userRepository.existsByEmailIgnoreCase(email)) {
+        if (userMapper.existsByEmail(email)) {
             throw new ConflictException("Email is already registered");
         }
 
@@ -49,7 +49,7 @@ public class AuthService {
                 Instant.now()
         );
         try {
-            userRepository.saveAndFlush(user);
+            userMapper.insert(user);
         } catch (DataIntegrityViolationException exception) {
             throw new ConflictException("Email is already registered");
         }
@@ -58,7 +58,7 @@ public class AuthService {
 
     @Transactional(readOnly = true)
     public TokenResponse login(LoginRequest request) {
-        UserAccount user = userRepository.findByEmailIgnoreCase(normalizeEmail(request.email()))
+        UserAccount user = userMapper.findByEmail(normalizeEmail(request.email()))
                 .orElseThrow(() -> new BadRequestException("Invalid email or password"));
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
             throw new BadRequestException("Invalid email or password");
@@ -68,7 +68,7 @@ public class AuthService {
 
     @Transactional
     public UserAccount ensureAdmin(String email, String rawPassword, String displayName) {
-        return userRepository.findByEmailIgnoreCase(normalizeEmail(email)).orElseGet(() -> {
+        return userMapper.findByEmail(normalizeEmail(email)).orElseGet(() -> {
             UserAccount admin = new UserAccount(
                     UUID.randomUUID().toString(),
                     normalizeEmail(email),
@@ -77,13 +77,14 @@ public class AuthService {
                     UserRole.ADMIN,
                     Instant.now()
             );
-            return userRepository.save(admin);
+            userMapper.insert(admin);
+            return admin;
         });
     }
 
     @Transactional(readOnly = true)
     public UserResponse currentUser(String userId) {
-        return userRepository.findById(userId)
+        return userMapper.findById(userId)
                 .map(this::userResponse)
                 .orElseThrow(() -> new BadRequestException("Authenticated user no longer exists"));
     }

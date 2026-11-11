@@ -2,12 +2,12 @@ package com.example.commerce.catalog.product;
 
 import com.example.commerce.platform.common.error.ConflictException;
 import com.example.commerce.platform.common.error.NotFoundException;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+import com.example.commerce.platform.common.web.PageResult;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
@@ -18,20 +18,23 @@ import static com.example.commerce.catalog.product.ProductDtos.UpdateProductImag
 @Service
 public class ProductService {
 
-    private final ProductRepository productRepository;
+    private final ProductMapper productMapper;
 
-    public ProductService(ProductRepository productRepository) {
-        this.productRepository = productRepository;
+    public ProductService(ProductMapper productMapper) {
+        this.productMapper = productMapper;
     }
 
     @Transactional(readOnly = true)
-    public Page<ProductResponse> list(Pageable pageable) {
-        return productRepository.findAll(pageable).map(this::toResponse);
+    public PageResult<ProductResponse> list(int page, int size) {
+        List<ProductResponse> content = productMapper.findPage(page * size, size).stream()
+                .map(this::toResponse)
+                .toList();
+        return PageResult.of(content, page, size, productMapper.count());
     }
 
     @Transactional(readOnly = true)
     public ProductResponse get(String id) {
-        return productRepository.findByIdAndStatus(id, ProductStatus.ACTIVE)
+        return productMapper.findActiveById(id)
                 .map(this::toResponse)
                 .orElseThrow(() -> new NotFoundException("Product not found: " + id));
     }
@@ -39,7 +42,7 @@ public class ProductService {
     @Transactional
     public ProductResponse create(CreateProductRequest request) {
         String sku = request.sku().trim().toUpperCase(Locale.ROOT);
-        if (productRepository.existsBySkuIgnoreCase(sku)) {
+        if (productMapper.countBySku(sku) > 0) {
             throw new ConflictException("SKU already exists: " + sku);
         }
 
@@ -55,15 +58,17 @@ public class ProductService {
                 ProductStatus.ACTIVE,
                 now
         );
-        return toResponse(productRepository.save(product));
+        productMapper.insert(product);
+        return toResponse(product);
     }
 
     @Transactional
     public ProductResponse updateImage(String id, UpdateProductImageRequest request) {
-        Product product = productRepository.findById(id)
+        Product product = productMapper.findById(id)
                 .orElseThrow(() -> new NotFoundException("Product not found: " + id));
         product.updateImage(normalizeImageUrl(request.imageUrl()));
-        return toResponse(productRepository.saveAndFlush(product));
+        productMapper.updateImage(id, product.getImageUrl(), product.getUpdatedAt());
+        return toResponse(product);
     }
 
     private String normalizeImageUrl(String imageUrl) {

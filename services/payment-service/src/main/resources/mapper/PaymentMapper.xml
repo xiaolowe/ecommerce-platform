@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.commerce.payment.payment.PaymentMapper">
+
+    <resultMap id="PaymentResultMap" type="com.example.commerce.payment.payment.Payment">
+        <id property="id" column="id"/>
+        <result property="paymentNo" column="payment_no"/>
+        <result property="orderId" column="order_id"/>
+        <result property="customerId" column="customer_id"/>
+        <result property="amountCents" column="amount_cents"/>
+        <result property="currency" column="currency"/>
+        <result property="channel" column="channel"/>
+        <result property="status" column="status"/>
+        <result property="providerTradeNo" column="provider_trade_no"/>
+        <result property="orderSynced" column="order_synced"/>
+        <result property="orderSyncAttempts" column="order_sync_attempts"/>
+        <result property="lastOrderSyncError" column="last_order_sync_error"/>
+        <result property="manualReviewRequired" column="manual_review_required"/>
+        <result property="expiresAt" column="expires_at"/>
+        <result property="paidAt" column="paid_at"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="version" column="version"/>
+    </resultMap>
+
+    <sql id="paymentColumns">
+        id, payment_no, order_id, customer_id, amount_cents, currency, channel, status,
+        provider_trade_no, order_synced, order_sync_attempts, last_order_sync_error,
+        manual_review_required, expires_at, paid_at, created_at, updated_at, version
+    </sql>
+
+    <select id="findByPaymentNo" resultMap="PaymentResultMap">
+        SELECT <include refid="paymentColumns"/>
+        FROM payments
+        WHERE payment_no = #{paymentNo}
+    </select>
+
+    <select id="findByOrderId" resultMap="PaymentResultMap">
+        SELECT <include refid="paymentColumns"/>
+        FROM payments
+        WHERE order_id = #{orderId}
+    </select>
+
+    <select id="findById" resultMap="PaymentResultMap">
+        SELECT <include refid="paymentColumns"/>
+        FROM payments
+        WHERE id = #{id}
+    </select>
+
+    <select id="findByPaymentNoForUpdate" resultMap="PaymentResultMap">
+        SELECT <include refid="paymentColumns"/>
+        FROM payments
+        WHERE payment_no = #{paymentNo}
+        FOR UPDATE
+    </select>
+
+    <insert id="insert">
+        INSERT INTO payments (
+            id, payment_no, order_id, customer_id, amount_cents, currency, channel, status,
+            provider_trade_no, order_synced, order_sync_attempts, last_order_sync_error,
+            manual_review_required, expires_at, paid_at, created_at, updated_at, version
+        )
+        VALUES (
+            #{id}, #{paymentNo}, #{orderId}, #{customerId}, #{amountCents}, #{currency}, #{channel},
+            #{status}, #{providerTradeNo}, #{orderSynced}, #{orderSyncAttempts}, #{lastOrderSyncError},
+            #{manualReviewRequired}, #{expiresAt}, #{paidAt}, #{createdAt}, #{updatedAt}, #{version}
+        )
+    </insert>
+
+    <update id="update">
+        UPDATE payments
+        SET status = #{status},
+            provider_trade_no = #{providerTradeNo},
+            order_synced = #{orderSynced},
+            order_sync_attempts = #{orderSyncAttempts},
+            last_order_sync_error = #{lastOrderSyncError},
+            manual_review_required = #{manualReviewRequired},
+            expires_at = #{expiresAt},
+            paid_at = #{paidAt},
+            updated_at = #{updatedAt},
+            version = version + 1
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteAll">
+        DELETE FROM payments
+    </delete>
+
+    <select id="findAdminPage" resultMap="PaymentResultMap">
+        SELECT <include refid="paymentColumns"/>
+        FROM payments
+        <where>
+            <if test="status != null">AND status = #{status}</if>
+            <if test="keyword != null and keyword != ''">
+                AND (
+                    LOWER(payment_no) LIKE CONCAT('%', LOWER(#{keyword}), '%')
+                    OR LOWER(order_id) LIKE CONCAT('%', LOWER(#{keyword}), '%')
+                    OR LOWER(customer_id) LIKE CONCAT('%', LOWER(#{keyword}), '%')
+                    OR LOWER(COALESCE(provider_trade_no, '')) LIKE CONCAT('%', LOWER(#{keyword}), '%')
+                )
+            </if>
+        </where>
+        ORDER BY created_at DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countAdmin" resultType="long">
+        SELECT COUNT(*)
+        FROM payments
+        <where>
+            <if test="status != null">AND status = #{status}</if>
+            <if test="keyword != null and keyword != ''">
+                AND (
+                    LOWER(payment_no) LIKE CONCAT('%', LOWER(#{keyword}), '%')
+                    OR LOWER(order_id) LIKE CONCAT('%', LOWER(#{keyword}), '%')
+                    OR LOWER(customer_id) LIKE CONCAT('%', LOWER(#{keyword}), '%')
+                    OR LOWER(COALESCE(provider_trade_no, '')) LIKE CONCAT('%', LOWER(#{keyword}), '%')
+                )
+            </if>
+        </where>
+    </select>
+
+    <select id="findSuccessfulUnsynced" resultMap="PaymentResultMap">
+        SELECT <include refid="paymentColumns"/>
+        FROM payments
+        WHERE status = 'SUCCEEDED'
+          AND order_synced = FALSE
+          AND manual_review_required = FALSE
+        ORDER BY paid_at ASC
+        LIMIT #{limit}
+    </select>
+
+    <select id="findExpiredRequiresAction" resultMap="PaymentResultMap">
+        SELECT <include refid="paymentColumns"/>
+        FROM payments
+        WHERE status = 'REQUIRES_ACTION' AND expires_at &lt;= #{now}
+        ORDER BY expires_at ASC
+        LIMIT #{limit}
+    </select>
+</mapper>

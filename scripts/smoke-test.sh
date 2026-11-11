@@ -115,5 +115,68 @@ customer_admin_status="$(
   exit 1
 }
 
+cancel_order="$(
+  curl -fsS -X POST "${base_url}/api/v1/orders" \
+    -H "Authorization: Bearer ${customer_token}" \
+    -H 'Content-Type: application/json' \
+    -d "{\"productId\":\"${product_id}\",\"quantity\":3}"
+)"
+cancel_order_id="$(printf '%s' "${cancel_order}" | json_value id)"
+stock_before_cancel="$(
+  curl -fsS "${base_url}/api/v1/inventory/stocks/${product_id}" \
+    -H "Authorization: Bearer ${customer_token}"
+)"
+available_before_cancel="$(printf '%s' "${stock_before_cancel}" | json_value availableStock)"
+
+cancelled_order="$(
+  curl -fsS -X POST "${base_url}/api/v1/orders/${cancel_order_id}/cancel" \
+    -H "Authorization: Bearer ${customer_token}"
+)"
+cancelled_status="$(printf '%s' "${cancelled_order}" | json_value status)"
+cancelled_reason="$(printf '%s' "${cancelled_order}" | json_value cancellationReason)"
+stock_released="$(printf '%s' "${cancelled_order}" | json_value stockReleased)"
+[ "${cancelled_status}" = "CANCELLED" ] &&
+  [ "${cancelled_reason}" = "CUSTOMER_REQUEST" ] &&
+  [ "${stock_released}" = "True" ] || {
+  printf 'Smoke test failed: order %s was not cancelled with inventory released\n' \
+    "${cancel_order_id}" >&2
+  exit 1
+}
+
+stock_after_cancel="$(
+  curl -fsS "${base_url}/api/v1/inventory/stocks/${product_id}" \
+    -H "Authorization: Bearer ${customer_token}"
+)"
+available_after_cancel="$(printf '%s' "${stock_after_cancel}" | json_value availableStock)"
+[ "${available_after_cancel}" -eq $((available_before_cancel + 3)) ] || {
+  printf 'Smoke test failed: cancelled order inventory was not restored\n' >&2
+  exit 1
+}
+
+if [ "${CHECK_ORDER_EXPIRY:-false}" = "true" ]; then
+  expiring_order="$(
+    curl -fsS -X POST "${base_url}/api/v1/orders" \
+      -H "Authorization: Bearer ${customer_token}" \
+      -H 'Content-Type: application/json' \
+      -d "{\"productId\":\"${product_id}\",\"quantity\":1}"
+  )"
+  expiring_order_id="$(printf '%s' "${expiring_order}" | json_value id)"
+  sleep "${EXPIRY_WAIT_SECONDS:-7}"
+  expired_order="$(
+    curl -fsS "${base_url}/api/v1/orders/${expiring_order_id}" \
+      -H "Authorization: Bearer ${customer_token}"
+  )"
+  expired_status="$(printf '%s' "${expired_order}" | json_value status)"
+  expired_reason="$(printf '%s' "${expired_order}" | json_value cancellationReason)"
+  expired_stock_released="$(printf '%s' "${expired_order}" | json_value stockReleased)"
+  [ "${expired_status}" = "CANCELLED" ] &&
+    [ "${expired_reason}" = "PAYMENT_TIMEOUT" ] &&
+    [ "${expired_stock_released}" = "True" ] || {
+    printf 'Smoke test failed: order %s was not expired automatically\n' \
+      "${expiring_order_id}" >&2
+    exit 1
+  }
+fi
+
 printf 'Smoke test passed: product=%s order=%s payment=%s status=%s\n' \
   "${product_id}" "${order_id}" "${payment_no}" "${order_status}"

@@ -6,6 +6,7 @@
     <envs>
       <env name="SERVER_PORT" value="8083" />
       <env name="JWT_SECRET" value="local-development-secret-change-before-cloud-1234567890" />
+      <env name="INTERNAL_API_KEY" value="local-internal-api-key-change-me" />
     </envs>
     <method v="2">
       <option name="Make" enabled="true" />

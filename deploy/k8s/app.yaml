@@ -295,6 +295,11 @@ spec:
                 configMapKeyRef:
                   name: ecommerce-config
                   key: INVENTORY_SERVICE_URL
+            - name: ORDER_PAYMENT_TTL_SECONDS
+              valueFrom:
+                configMapKeyRef:
+                  name: ecommerce-config
+                  key: ORDER_PAYMENT_TTL_SECONDS
           envFrom:
             - secretRef:
                 name: ecommerce-secrets

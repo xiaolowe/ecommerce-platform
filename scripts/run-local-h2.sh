@@ -163,6 +163,7 @@ pids+=("$!")
 (
   export SERVER_PORT="${inventory_port}"
   export JWT_SECRET="${local_jwt_secret}"
+  export INTERNAL_API_KEY="${local_internal_api_key}"
   exec "${local_jdk_home}/bin/java" -jar "${runtime_dir}/inventory-service.jar"
 ) >"${log_dir}/inventory-service.log" 2>&1 &
 pids+=("$!")
@@ -173,6 +174,7 @@ pids+=("$!")
   export CATALOG_SERVICE_URL="http://localhost:${catalog_port}"
   export INVENTORY_SERVICE_URL="http://localhost:${inventory_port}"
   export INTERNAL_API_KEY="${local_internal_api_key}"
+  export ORDER_PAYMENT_TTL_SECONDS="${ORDER_PAYMENT_TTL_SECONDS:-900}"
   exec "${local_jdk_home}/bin/java" -jar "${runtime_dir}/order-service.jar"
 ) >"${log_dir}/order-service.log" 2>&1 &
 pids+=("$!")

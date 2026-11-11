@@ -9,6 +9,7 @@
       <env name="CATALOG_SERVICE_URL" value="http://localhost:8082" />
       <env name="INVENTORY_SERVICE_URL" value="http://localhost:8083" />
       <env name="INTERNAL_API_KEY" value="local-internal-api-key-change-me" />
+      <env name="ORDER_PAYMENT_TTL_SECONDS" value="900" />
     </envs>
     <method v="2">
       <option name="Make" enabled="true" />

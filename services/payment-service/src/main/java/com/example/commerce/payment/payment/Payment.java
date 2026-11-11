@@ -1,68 +1,46 @@
 package com.example.commerce.payment.payment;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import jakarta.persistence.Version;
-
 import java.time.Instant;
 
-@Entity
-@Table(name = "payments")
 public class Payment {
 
-    @Id
-    @Column(length = 36)
     private String id;
 
-    @Column(name = "payment_no", nullable = false, unique = true, length = 40)
     private String paymentNo;
 
-    @Column(name = "order_id", nullable = false, unique = true, length = 36)
     private String orderId;
 
-    @Column(name = "customer_id", nullable = false, length = 36)
     private String customerId;
 
-    @Column(name = "amount_cents", nullable = false)
     private long amountCents;
 
-    @Column(nullable = false, length = 3)
     private String currency;
 
-    @Column(nullable = false, length = 24)
     private String channel;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 24)
     private PaymentStatus status;
 
-    @Column(name = "provider_trade_no", length = 80)
     private String providerTradeNo;
 
-    @Column(name = "order_synced", nullable = false)
     private boolean orderSynced;
 
-    @Column(name = "expires_at", nullable = false)
+    private int orderSyncAttempts;
+
+    private String lastOrderSyncError;
+
+    private boolean manualReviewRequired;
+
     private Instant expiresAt;
 
-    @Column(name = "paid_at")
     private Instant paidAt;
 
-    @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
-    @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    @Version
-    @Column(nullable = false)
     private long version;
 
-    protected Payment() {
+    public Payment() {
     }
 
     public Payment(String id, String paymentNo, String orderId, String customerId, long amountCents,
@@ -104,61 +82,157 @@ public class Payment {
 
     public void markOrderSynced() {
         orderSynced = true;
+        lastOrderSyncError = null;
+        manualReviewRequired = false;
+    }
+
+    public void markOrderSyncFailed(String error, boolean manualReviewRequired) {
+        orderSyncAttempts++;
+        lastOrderSyncError = truncate(error == null ? "Unknown order synchronization error" : error, 500);
+        this.manualReviewRequired = manualReviewRequired;
     }
 
     public String getId() {
         return id;
     }
 
+    public void setId(String id) {
+        this.id = id;
+    }
+
     public String getPaymentNo() {
         return paymentNo;
+    }
+
+    public void setPaymentNo(String paymentNo) {
+        this.paymentNo = paymentNo;
     }
 
     public String getOrderId() {
         return orderId;
     }
 
+    public void setOrderId(String orderId) {
+        this.orderId = orderId;
+    }
+
     public String getCustomerId() {
         return customerId;
+    }
+
+    public void setCustomerId(String customerId) {
+        this.customerId = customerId;
     }
 
     public long getAmountCents() {
         return amountCents;
     }
 
+    public void setAmountCents(long amountCents) {
+        this.amountCents = amountCents;
+    }
+
     public String getCurrency() {
         return currency;
+    }
+
+    public void setCurrency(String currency) {
+        this.currency = currency;
     }
 
     public String getChannel() {
         return channel;
     }
 
+    public void setChannel(String channel) {
+        this.channel = channel;
+    }
+
     public PaymentStatus getStatus() {
         return status;
+    }
+
+    public void setStatus(PaymentStatus status) {
+        this.status = status;
     }
 
     public String getProviderTradeNo() {
         return providerTradeNo;
     }
 
+    public void setProviderTradeNo(String providerTradeNo) {
+        this.providerTradeNo = providerTradeNo;
+    }
+
     public boolean isOrderSynced() {
         return orderSynced;
+    }
+
+    public void setOrderSynced(boolean orderSynced) {
+        this.orderSynced = orderSynced;
+    }
+
+    public int getOrderSyncAttempts() {
+        return orderSyncAttempts;
+    }
+
+    public void setOrderSyncAttempts(int orderSyncAttempts) {
+        this.orderSyncAttempts = orderSyncAttempts;
+    }
+
+    public String getLastOrderSyncError() {
+        return lastOrderSyncError;
+    }
+
+    public void setLastOrderSyncError(String lastOrderSyncError) {
+        this.lastOrderSyncError = lastOrderSyncError;
+    }
+
+    public boolean isManualReviewRequired() {
+        return manualReviewRequired;
+    }
+
+    public void setManualReviewRequired(boolean manualReviewRequired) {
+        this.manualReviewRequired = manualReviewRequired;
     }
 
     public Instant getExpiresAt() {
         return expiresAt;
     }
 
+    public void setExpiresAt(Instant expiresAt) {
+        this.expiresAt = expiresAt;
+    }
+
     public Instant getPaidAt() {
         return paidAt;
+    }
+
+    public void setPaidAt(Instant paidAt) {
+        this.paidAt = paidAt;
     }
 
     public Instant getCreatedAt() {
         return createdAt;
     }
 
+    public void setCreatedAt(Instant createdAt) {
+        this.createdAt = createdAt;
+    }
+
     public Instant getUpdatedAt() {
         return updatedAt;
+    }
+
+    public void setUpdatedAt(Instant updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    public void setVersion(long version) {
+        this.version = version;
+    }
+
+    private static String truncate(String value, int maxLength) {
+        return value.length() <= maxLength ? value : value.substring(0, maxLength);
     }
 }

@@ -110,6 +110,10 @@ onMounted(load)
                 </el-descriptions-item>
                 <el-descriptions-item label="创建时间">{{ formatDate(row.createdAt) }}</el-descriptions-item>
                 <el-descriptions-item label="过期时间">{{ formatDate(row.expiresAt) }}</el-descriptions-item>
+                <el-descriptions-item label="同步尝试">{{ row.orderSyncAttempts }} 次</el-descriptions-item>
+                <el-descriptions-item label="最近错误">
+                  {{ row.lastOrderSyncError ?? '—' }}
+                </el-descriptions-item>
               </el-descriptions>
             </div>
           </template>
@@ -127,8 +131,11 @@ onMounted(load)
         </el-table-column>
         <el-table-column label="订单同步" width="110">
           <template #default="{ row }">
-            <el-tag :type="row.orderSynced ? 'success' : 'danger'" effect="plain">
-              {{ row.orderSynced ? '已同步' : '待同步' }}
+            <el-tag
+              :type="row.orderSynced ? 'success' : row.manualReviewRequired ? 'danger' : 'warning'"
+              effect="plain"
+            >
+              {{ row.orderSynced ? '已同步' : row.manualReviewRequired ? '人工处理' : '待同步' }}
             </el-tag>
           </template>
         </el-table-column>

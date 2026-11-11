@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.commerce.inventory.stock.StockMapper">
+
+    <resultMap id="StockResultMap" type="com.example.commerce.inventory.stock.Stock">
+        <id property="productId" column="product_id"/>
+        <result property="availableStock" column="available_stock"/>
+        <result property="reservedStock" column="reserved_stock"/>
+        <result property="version" column="version"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <select id="countById" resultType="int">
+        SELECT COUNT(*) FROM sku_stocks WHERE product_id = #{productId}
+    </select>
+
+    <select id="findById" resultMap="StockResultMap">
+        SELECT product_id, available_stock, reserved_stock, version, updated_at
+        FROM sku_stocks
+        WHERE product_id = #{productId}
+    </select>
+
+    <insert id="insert">
+        INSERT INTO sku_stocks (
+            product_id, available_stock, reserved_stock, version, updated_at
+        )
+        VALUES (
+            #{productId}, #{availableStock}, #{reservedStock}, #{version}, #{updatedAt}
+        )
+    </insert>
+
+    <delete id="deleteAll">
+        DELETE FROM sku_stocks
+    </delete>
+
+    <update id="reserve">
+        UPDATE sku_stocks
+        SET available_stock = available_stock - #{quantity},
+            reserved_stock = reserved_stock + #{quantity},
+            updated_at = #{updatedAt},
+            version = version + 1
+        WHERE product_id = #{productId}
+          AND available_stock >= #{quantity}
+    </update>
+
+    <update id="release">
+        UPDATE sku_stocks
+        SET available_stock = available_stock + #{quantity},
+            reserved_stock = reserved_stock - #{quantity},
+            updated_at = #{updatedAt},
+            version = version + 1
+        WHERE product_id = #{productId}
+          AND reserved_stock >= #{quantity}
+    </update>
+</mapper>

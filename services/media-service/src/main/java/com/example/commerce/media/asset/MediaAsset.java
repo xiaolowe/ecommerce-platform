@@ -1,45 +1,28 @@
 package com.example.commerce.media.asset;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-
 import java.time.Instant;
 
-@Entity
-@Table(name = "media_assets")
 public class MediaAsset {
 
-    @Id
-    @Column(length = 36)
     private String id;
 
-    @Column(name = "object_key", nullable = false, unique = true, length = 300)
     private String objectKey;
 
-    @Column(name = "original_name", nullable = false, length = 255)
     private String originalName;
 
-    @Column(name = "content_type", nullable = false, length = 64)
     private String contentType;
 
-    @Column(name = "size_bytes", nullable = false)
     private long sizeBytes;
 
-    @Column(nullable = false)
     private int width;
 
-    @Column(nullable = false)
     private int height;
 
-    @Column(nullable = false, length = 64)
     private String sha256;
 
-    @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
-    protected MediaAsset() {
+    public MediaAsset() {
     }
 
     public MediaAsset(String id, String objectKey, String originalName, String contentType,
@@ -59,35 +42,71 @@ public class MediaAsset {
         return id;
     }
 
+    public void setId(String id) {
+        this.id = id;
+    }
+
     public String getObjectKey() {
         return objectKey;
+    }
+
+    public void setObjectKey(String objectKey) {
+        this.objectKey = objectKey;
     }
 
     public String getOriginalName() {
         return originalName;
     }
 
+    public void setOriginalName(String originalName) {
+        this.originalName = originalName;
+    }
+
     public String getContentType() {
         return contentType;
+    }
+
+    public void setContentType(String contentType) {
+        this.contentType = contentType;
     }
 
     public long getSizeBytes() {
         return sizeBytes;
     }
 
+    public void setSizeBytes(long sizeBytes) {
+        this.sizeBytes = sizeBytes;
+    }
+
     public int getWidth() {
         return width;
+    }
+
+    public void setWidth(int width) {
+        this.width = width;
     }
 
     public int getHeight() {
         return height;
     }
 
+    public void setHeight(int height) {
+        this.height = height;
+    }
+
     public String getSha256() {
         return sha256;
     }
 
+    public void setSha256(String sha256) {
+        this.sha256 = sha256;
+    }
+
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public void setCreatedAt(Instant createdAt) {
+        this.createdAt = createdAt;
     }
 }

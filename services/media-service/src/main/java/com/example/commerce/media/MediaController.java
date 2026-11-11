@@ -3,10 +3,9 @@ package com.example.commerce.media;
 import com.example.commerce.media.asset.MediaAsset;
 import com.example.commerce.media.asset.MediaAssetService;
 import com.example.commerce.media.storage.LocalMediaStorage;
+import com.example.commerce.platform.common.web.PageResult;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.core.io.Resource;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -46,11 +45,15 @@ public class MediaController {
 
     @GetMapping("/api/v1/media/images")
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
-    Page<MediaAssetResponse> list(@RequestParam(defaultValue = "0") int page,
-                                  @RequestParam(defaultValue = "24") int size) {
+    PageResult<MediaAssetResponse> list(@RequestParam(defaultValue = "0") int page,
+                                        @RequestParam(defaultValue = "24") int size) {
         int safeSize = Math.min(Math.max(size, 1), 100);
-        return assetService.list(PageRequest.of(Math.max(page, 0), safeSize))
-                .map(asset -> MediaAssetResponse.from(asset, storage));
+        PageResult<MediaAsset> result = assetService.list(Math.max(page, 0), safeSize);
+        return PageResult.of(
+                result.content().stream().map(asset -> MediaAssetResponse.from(asset, storage)).toList(),
+                result.page().number(),
+                result.page().size(),
+                result.page().totalElements());
     }
 
     @DeleteMapping("/api/v1/media/images/{id}")

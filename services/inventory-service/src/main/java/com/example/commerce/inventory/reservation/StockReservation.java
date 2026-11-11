@@ -1,45 +1,26 @@
 package com.example.commerce.inventory.reservation;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-
 import java.time.Instant;
 
-@Entity
-@Table(name = "stock_reservations")
 public class StockReservation {
 
-    @Id
-    @Column(length = 36)
     private String id;
 
-    @Column(name = "order_id", nullable = false, length = 36)
     private String orderId;
 
-    @Column(name = "product_id", nullable = false, length = 36)
     private String productId;
 
-    @Column(nullable = false)
     private long quantity;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 24)
     private ReservationStatus status;
 
-    @Column(name = "expires_at", nullable = false)
     private Instant expiresAt;
 
-    @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
-    @Column(name = "released_at")
     private Instant releasedAt;
 
-    protected StockReservation() {
+    public StockReservation() {
     }
 
     public StockReservation(String id, String orderId, String productId, long quantity,
@@ -62,23 +43,60 @@ public class StockReservation {
         return id;
     }
 
+    public void setId(String id) {
+        this.id = id;
+    }
+
     public String getOrderId() {
         return orderId;
+    }
+
+    public void setOrderId(String orderId) {
+        this.orderId = orderId;
     }
 
     public String getProductId() {
         return productId;
     }
 
+    public void setProductId(String productId) {
+        this.productId = productId;
+    }
+
     public long getQuantity() {
         return quantity;
+    }
+
+    public void setQuantity(long quantity) {
+        this.quantity = quantity;
     }
 
     public ReservationStatus getStatus() {
         return status;
     }
 
+    public void setStatus(ReservationStatus status) {
+        this.status = status;
+    }
+
     public Instant getExpiresAt() {
         return expiresAt;
+    }
+
+    public void setExpiresAt(Instant expiresAt) {
+        this.expiresAt = expiresAt;
+    }
+
+    public void setCreatedAt(Instant createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public Instant getReleasedAt() {
+        return releasedAt;
+    }
+
+    public void setReleasedAt(Instant releasedAt) {
+        this.releasedAt = releasedAt;
+        this.status = ReservationStatus.RELEASED;
     }
 }

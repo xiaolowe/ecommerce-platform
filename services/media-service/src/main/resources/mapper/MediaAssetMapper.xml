@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.commerce.media.asset.MediaAssetMapper">
+
+    <resultMap id="MediaAssetResultMap" type="com.example.commerce.media.asset.MediaAsset">
+        <id property="id" column="id"/>
+        <result property="objectKey" column="object_key"/>
+        <result property="originalName" column="original_name"/>
+        <result property="contentType" column="content_type"/>
+        <result property="sizeBytes" column="size_bytes"/>
+        <result property="width" column="width"/>
+        <result property="height" column="height"/>
+        <result property="sha256" column="sha256"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <sql id="mediaColumns">
+        id, object_key, original_name, content_type, size_bytes, width, height, sha256, created_at
+    </sql>
+
+    <insert id="insert">
+        INSERT INTO media_assets (
+            id, object_key, original_name, content_type, size_bytes, width, height, sha256, created_at
+        )
+        VALUES (
+            #{id}, #{objectKey}, #{originalName}, #{contentType}, #{sizeBytes}, #{width},
+            #{height}, #{sha256}, #{createdAt}
+        )
+    </insert>
+
+    <select id="findPage" resultMap="MediaAssetResultMap">
+        SELECT <include refid="mediaColumns"/>
+        FROM media_assets
+        ORDER BY created_at DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="count" resultType="long">
+        SELECT COUNT(*) FROM media_assets
+    </select>
+
+    <select id="findById" resultMap="MediaAssetResultMap">
+        SELECT <include refid="mediaColumns"/>
+        FROM media_assets
+        WHERE id = #{id}
+    </select>
+
+    <select id="findByObjectKey" resultMap="MediaAssetResultMap">
+        SELECT <include refid="mediaColumns"/>
+        FROM media_assets
+        WHERE object_key = #{objectKey}
+    </select>
+
+    <delete id="deleteById">
+        DELETE FROM media_assets WHERE id = #{id}
+    </delete>
+</mapper>

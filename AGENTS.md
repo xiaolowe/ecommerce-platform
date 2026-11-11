@@ -2,7 +2,7 @@
 
 ## 技术栈
 
-- 后端使用 Java 21、Spring Boot 3.3.5、Spring Cloud Gateway、Spring Data JPA 和 Flyway。
+- 后端使用 Java 21、Spring Boot 3.3.5、Spring Cloud Gateway、MyBatis 和 Flyway。
 - 前端统一使用 Vue 3、TypeScript、Vite、Vue Router、Pinia；运营后台使用 Element Plus。
 - 业务服务包括认证、商品、库存、订单、媒体和支付服务；每个服务拥有独立数据库。
 
@@ -17,6 +17,7 @@
 - 支付服务本地使用 Mock 渠道；支付服务与订单服务之间的内部确认请求使用 `INTERNAL_API_KEY`。
 - 管理端订单和支付查询使用 `/api/v1/admin/**`，必须在网关和业务服务两层校验 `ROLE_ADMIN`。
 - 用户订单列表使用 `/api/v1/orders`，必须按 JWT subject 对应的客户 ID 隔离数据。
+- 待支付订单一律通过订单服务取消；库存只能由订单服务使用内部令牌释放，不允许前端直接调用库存预占接口。
 
 ## Git 与 GitHub
 

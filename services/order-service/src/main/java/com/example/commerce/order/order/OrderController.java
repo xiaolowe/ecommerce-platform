@@ -1,10 +1,7 @@
 package com.example.commerce.order.order;
 
 import jakarta.validation.Valid;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import com.example.commerce.platform.common.web.PageResult;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -40,17 +37,21 @@ public class OrderController {
     }
 
     @GetMapping
-    Page<OrderResponse> list(@AuthenticationPrincipal Jwt jwt,
-                             @RequestParam(required = false) OrderStatus status,
-                             @RequestParam(defaultValue = "0") int page,
-                             @RequestParam(defaultValue = "20") int size) {
-        Pageable pageable = PageRequest.of(Math.max(page, 0), Math.clamp(size, 1, MAX_PAGE_SIZE),
-                Sort.by(Sort.Direction.DESC, "createdAt"));
-        return orderService.listForCustomer(jwt.getSubject(), status, pageable);
+    PageResult<OrderResponse> list(@AuthenticationPrincipal Jwt jwt,
+                                   @RequestParam(required = false) OrderStatus status,
+                                   @RequestParam(defaultValue = "0") int page,
+                                   @RequestParam(defaultValue = "20") int size) {
+        return orderService.listForCustomer(
+                jwt.getSubject(), status, Math.max(page, 0), Math.clamp(size, 1, MAX_PAGE_SIZE));
     }
 
     @GetMapping("/{id}")
     OrderResponse get(@AuthenticationPrincipal Jwt jwt, @PathVariable String id) {
         return orderService.get(jwt.getSubject(), id);
+    }
+
+    @PostMapping("/{id}/cancel")
+    OrderResponse cancel(@AuthenticationPrincipal Jwt jwt, @PathVariable String id) {
+        return orderService.cancel(jwt.getSubject(), id);
     }
 }

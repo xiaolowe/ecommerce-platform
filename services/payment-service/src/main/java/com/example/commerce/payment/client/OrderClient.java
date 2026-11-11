@@ -61,7 +61,8 @@ public class OrderClient {
             String customerId,
             String status,
             long totalCents,
-            String currency
+            String currency,
+            java.time.Instant paymentExpiresAt
     ) {
     }
 

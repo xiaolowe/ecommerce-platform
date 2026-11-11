@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.commerce.auth.user.UserAccountMapper">
+
+    <resultMap id="UserAccountResultMap" type="com.example.commerce.auth.user.UserAccount">
+        <id property="id" column="id"/>
+        <result property="email" column="email"/>
+        <result property="passwordHash" column="password_hash"/>
+        <result property="displayName" column="display_name"/>
+        <result property="role" column="role"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <select id="findByEmail" resultMap="UserAccountResultMap">
+        SELECT id, email, password_hash, display_name, role, created_at
+        FROM app_users
+        WHERE LOWER(email) = LOWER(#{email})
+        LIMIT 1
+    </select>
+
+    <select id="findById" resultMap="UserAccountResultMap">
+        SELECT id, email, password_hash, display_name, role, created_at
+        FROM app_users
+        WHERE id = #{id}
+    </select>
+
+    <select id="countByEmail" resultType="int">
+        SELECT COUNT(*)
+        FROM app_users
+        WHERE LOWER(email) = LOWER(#{email})
+    </select>
+
+    <insert id="insert">
+        INSERT INTO app_users (id, email, password_hash, display_name, role, created_at)
+        VALUES (#{id}, #{email}, #{passwordHash}, #{displayName}, #{role}, #{createdAt})
+    </insert>
+</mapper>
