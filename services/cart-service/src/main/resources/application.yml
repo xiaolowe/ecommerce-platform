@@ -1,0 +1,43 @@
+server:
+  port: ${SERVER_PORT:8087}
+  shutdown: graceful
+
+spring:
+  application:
+    name: cart-service
+  datasource:
+    url: ${DB_URL:jdbc:h2:mem:cart;MODE=MySQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE}
+    username: ${DB_USERNAME:sa}
+    password: ${DB_PASSWORD:}
+  flyway:
+    enabled: true
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+
+security:
+  jwt:
+    secret: ${JWT_SECRET:local-development-secret-change-before-cloud-1234567890}
+
+clients:
+  catalog:
+    base-url: ${CATALOG_SERVICE_URL:http://localhost:8082}
+
+internal:
+  api-key: ${INTERNAL_API_KEY:local-internal-api-key-change-me}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+logging:
+  pattern:
+    level: "%5p [${spring.application.name:},%X{traceId:-}]"

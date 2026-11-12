@@ -119,6 +119,9 @@ cp -f \
 cp -f \
   "${project_root}/services/payment-service/target/payment-service-0.1.0-SNAPSHOT.jar" \
   "${runtime_dir}/payment-service.jar"
+cp -f \
+  "${project_root}/services/cart-service/target/cart-service-0.1.0-SNAPSHOT.jar" \
+  "${runtime_dir}/cart-service.jar"
 
 mkdir -p "${log_dir}"
 allocate_port GATEWAY_PORT 8080
@@ -135,6 +138,8 @@ allocate_port MEDIA_PORT 8085
 media_port="${allocated_port}"
 allocate_port PAYMENT_PORT 8086
 payment_port="${allocated_port}"
+allocate_port CART_PORT 8087
+cart_port="${allocated_port}"
 allocate_port ADMIN_PORT 5173
 admin_port="${allocated_port}"
 allocate_port STOREFRONT_PORT 5174
@@ -173,6 +178,7 @@ pids+=("$!")
   export JWT_SECRET="${local_jwt_secret}"
   export CATALOG_SERVICE_URL="http://localhost:${catalog_port}"
   export INVENTORY_SERVICE_URL="http://localhost:${inventory_port}"
+  export CART_SERVICE_URL="http://localhost:${cart_port}"
   export INTERNAL_API_KEY="${local_internal_api_key}"
   export ORDER_PAYMENT_TTL_SECONDS="${ORDER_PAYMENT_TTL_SECONDS:-900}"
   exec "${local_jdk_home}/bin/java" -jar "${runtime_dir}/order-service.jar"
@@ -198,12 +204,22 @@ pids+=("$!")
 ) >"${log_dir}/media-service.log" 2>&1 &
 pids+=("$!")
 
+(
+  export SERVER_PORT="${cart_port}"
+  export JWT_SECRET="${local_jwt_secret}"
+  export CATALOG_SERVICE_URL="http://localhost:${catalog_port}"
+  export INTERNAL_API_KEY="${local_internal_api_key}"
+  exec "${local_jdk_home}/bin/java" -jar "${runtime_dir}/cart-service.jar"
+) >"${log_dir}/cart-service.log" 2>&1 &
+pids+=("$!")
+
 wait_for_http "auth-service" "http://localhost:${auth_port}/actuator/health/readiness"
 wait_for_http "catalog-service" "http://localhost:${catalog_port}/actuator/health/readiness"
 wait_for_http "inventory-service" "http://localhost:${inventory_port}/actuator/health/readiness"
 wait_for_http "order-service" "http://localhost:${order_port}/actuator/health/readiness"
 wait_for_http "media-service" "http://localhost:${media_port}/actuator/health/readiness"
 wait_for_http "payment-service" "http://localhost:${payment_port}/actuator/health/readiness"
+wait_for_http "cart-service" "http://localhost:${cart_port}/actuator/health/readiness"
 
 (
   export SERVER_PORT="${gateway_port}"
@@ -214,6 +230,7 @@ wait_for_http "payment-service" "http://localhost:${payment_port}/actuator/healt
   export ORDER_SERVICE_URL="http://localhost:${order_port}"
   export MEDIA_SERVICE_URL="http://localhost:${media_port}"
   export PAYMENT_SERVICE_URL="http://localhost:${payment_port}"
+  export CART_SERVICE_URL="http://localhost:${cart_port}"
   export CORS_ALLOWED_ORIGINS="http://localhost:${admin_port},http://127.0.0.1:${admin_port},http://localhost:${storefront_port},http://127.0.0.1:${storefront_port}"
   exec "${local_jdk_home}/bin/java" -jar "${runtime_dir}/gateway.jar"
 ) >"${log_dir}/gateway.log" 2>&1 &

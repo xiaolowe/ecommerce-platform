@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import AuthView from '../views/AuthView.vue'
 import CartView from '../views/CartView.vue'
+import CheckoutView from '../views/CheckoutView.vue'
 import HomeView from '../views/HomeView.vue'
 import NotFoundView from '../views/NotFoundView.vue'
 import OrderView from '../views/OrderView.vue'
@@ -14,6 +15,12 @@ const router = createRouter({
     { path: '/', name: 'home', component: HomeView },
     { path: '/products/:id', name: 'product', component: ProductView },
     { path: '/cart', name: 'cart', component: CartView, meta: { requiresAuth: true } },
+    {
+      path: '/checkout',
+      name: 'checkout',
+      component: CheckoutView,
+      meta: { requiresAuth: true },
+    },
     { path: '/auth', name: 'auth', component: AuthView },
     {
       path: '/orders',

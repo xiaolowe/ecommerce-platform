@@ -116,6 +116,15 @@ onMounted(load)
                 <el-descriptions-item label="库存释放">
                   {{ row.stockReleased ? '已释放' : '未释放 / 待重试' }}
                 </el-descriptions-item>
+                <el-descriptions-item label="收货人">
+                  {{ row.shippingAddress?.recipientName ?? '—' }}
+                  {{ row.shippingAddress?.recipientPhone ?? '' }}
+                </el-descriptions-item>
+                <el-descriptions-item label="收货地址">
+                  {{ row.shippingAddress
+                    ? `${row.shippingAddress.region} ${row.shippingAddress.detail}`
+                    : '—' }}
+                </el-descriptions-item>
                 <el-descriptions-item label="创建时间">{{ formatDate(row.createdAt) }}</el-descriptions-item>
                 <el-descriptions-item label="更新时间">{{ formatDate(row.updatedAt) }}</el-descriptions-item>
               </el-descriptions>

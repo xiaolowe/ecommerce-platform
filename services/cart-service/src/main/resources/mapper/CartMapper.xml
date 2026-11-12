@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.commerce.cart.cart.CartMapper">
+
+    <resultMap id="CartItemResultMap" type="com.example.commerce.cart.cart.CartItem">
+        <id property="id" column="id"/>
+        <result property="customerId" column="customer_id"/>
+        <result property="productId" column="product_id"/>
+        <result property="sku" column="sku"/>
+        <result property="productName" column="product_name"/>
+        <result property="unitPriceCents" column="unit_price_cents"/>
+        <result property="currency" column="currency"/>
+        <result property="quantity" column="quantity"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <sql id="cartColumns">
+        id, customer_id, product_id, sku, product_name, unit_price_cents, currency,
+        quantity, created_at, updated_at
+    </sql>
+
+    <select id="findByCustomerId" resultMap="CartItemResultMap">
+        SELECT <include refid="cartColumns"/>
+        FROM shopping_cart_items
+        WHERE customer_id = #{customerId}
+        ORDER BY updated_at DESC
+    </select>
+
+    <select id="findByCustomerIdAndProductId" resultMap="CartItemResultMap">
+        SELECT <include refid="cartColumns"/>
+        FROM shopping_cart_items
+        WHERE customer_id = #{customerId} AND product_id = #{productId}
+    </select>
+
+    <select id="findByCustomerIdAndProductIdForUpdate" resultMap="CartItemResultMap">
+        SELECT <include refid="cartColumns"/>
+        FROM shopping_cart_items
+        WHERE customer_id = #{customerId} AND product_id = #{productId}
+        FOR UPDATE
+    </select>
+
+    <insert id="insert">
+        INSERT INTO shopping_cart_items (
+            id, customer_id, product_id, sku, product_name, unit_price_cents,
+            currency, quantity, created_at, updated_at
+        )
+        VALUES (
+            #{id}, #{customerId}, #{productId}, #{sku}, #{productName}, #{unitPriceCents},
+            #{currency}, #{quantity}, #{createdAt}, #{updatedAt}
+        )
+    </insert>
+
+    <update id="updateItem">
+        UPDATE shopping_cart_items
+        SET sku = #{sku},
+            product_name = #{productName},
+            unit_price_cents = #{unitPriceCents},
+            currency = #{currency},
+            quantity = #{quantity},
+            updated_at = #{updatedAt}
+        WHERE customer_id = #{customerId} AND product_id = #{productId}
+    </update>
+
+    <update id="updateQuantity">
+        UPDATE shopping_cart_items
+        SET quantity = #{quantity}, updated_at = #{updatedAt}
+        WHERE customer_id = #{customerId} AND product_id = #{productId}
+    </update>
+
+    <update id="decrementQuantity">
+        UPDATE shopping_cart_items
+        SET quantity = quantity - #{quantity}, updated_at = #{updatedAt}
+        WHERE customer_id = #{customerId}
+          AND product_id = #{productId}
+          AND quantity > #{quantity}
+    </update>
+
+    <delete id="deleteExactQuantity">
+        DELETE FROM shopping_cart_items
+        WHERE customer_id = #{customerId}
+          AND product_id = #{productId}
+          AND quantity = #{quantity}
+    </delete>
+
+    <delete id="deleteItem">
+        DELETE FROM shopping_cart_items
+        WHERE customer_id = #{customerId} AND product_id = #{productId}
+    </delete>
+
+    <delete id="deleteByCustomerId">
+        DELETE FROM shopping_cart_items WHERE customer_id = #{customerId}
+    </delete>
+</mapper>

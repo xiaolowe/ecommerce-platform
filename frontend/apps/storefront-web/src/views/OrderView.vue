@@ -85,6 +85,11 @@ onMounted(async () => {
       <p class="kicker">ORDER CONFIRMATION</p>
       <h1>{{ order.status === 'PAID' ? '支付完成' : '订单已创建' }}</h1>
       <p class="order-number">订单号 {{ order.id }}</p>
+      <div v-if="order.shippingAddress" class="shipping-address-card">
+        <span>收货信息</span>
+        <strong>{{ order.shippingAddress.recipientName }} · {{ order.shippingAddress.recipientPhone }}</strong>
+        <small>{{ order.shippingAddress.region }} {{ order.shippingAddress.detail }}</small>
+      </div>
       <p v-if="order.paymentExpiresAt && order.status === 'PENDING_PAYMENT'" class="order-number">
         支付截止时间：{{ formatDate(order.paymentExpiresAt) }}
       </p>

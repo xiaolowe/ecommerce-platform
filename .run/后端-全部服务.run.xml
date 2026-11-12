@@ -7,6 +7,7 @@
     <toRun name="后端-网关" type="Application" />
     <toRun name="后端-订单服务" type="Application" />
     <toRun name="后端-认证服务" type="Application" />
+    <toRun name="后端-购物车服务" type="Application" />
     <method v="2" />
   </configuration>
 </component>

@@ -49,6 +49,12 @@ export interface Order {
   cancelledAt?: string | null
   cancellationReason?: string | null
   stockReleased: boolean
+  shippingAddress?: {
+    recipientName: string
+    recipientPhone: string
+    region: string
+    detail: string
+  } | null
   items: Array<{
     productId: string
     sku: string
@@ -79,6 +85,36 @@ export interface Payment {
   createdAt: string
 }
 
+export interface CartItem {
+  id: string
+  productId: string
+  sku: string
+  productName: string
+  unitPriceCents: number
+  currency: string
+  quantity: number
+  subtotalCents: number
+  updatedAt: string
+}
+
+export interface CartResponse {
+  items: CartItem[]
+  totalQuantity: number
+  subtotalCents: number
+  updatedAt?: string | null
+}
+
+export interface Address {
+  id: string
+  recipientName: string
+  recipientPhone: string
+  region: string
+  detail: string
+  defaultAddress: boolean
+  createdAt: string
+  updatedAt: string
+}
+
 export async function login(email: string, password: string) {
   const { data } = await http.post<TokenResponse>('/auth/login', { email, password })
   return data
@@ -105,8 +141,11 @@ export async function getProduct(id: string) {
   return data
 }
 
-export async function createOrder(productId: string, quantity: number) {
-  const { data } = await http.post<Order>('/orders', { productId, quantity })
+export async function createOrder(
+  items: Array<{ productId: string; quantity: number }>,
+  addressId: string,
+) {
+  const { data } = await http.post<Order>('/orders', { items, addressId })
   return data
 }
 
@@ -142,4 +181,67 @@ export async function getPayment(paymentNo: string) {
 export async function mockPay(paymentNo: string) {
   const { data } = await http.post<Payment>(`/payments/${paymentNo}/mock-pay`)
   return data
+}
+
+export async function getCart() {
+  const { data } = await http.get<CartResponse>('/cart')
+  return data
+}
+
+export async function addCartItem(productId: string, quantity: number) {
+  const { data } = await http.post<CartResponse>('/cart/items', { productId, quantity })
+  return data
+}
+
+export async function updateCartItemQuantity(productId: string, quantity: number) {
+  const { data } = await http.put<CartResponse>(`/cart/items/${productId}`, { quantity })
+  return data
+}
+
+export async function removeCartItem(productId: string) {
+  const { data } = await http.delete<CartResponse>(`/cart/items/${productId}`)
+  return data
+}
+
+export async function clearCart() {
+  await http.delete('/cart')
+}
+
+export async function listAddresses() {
+  const { data } = await http.get<Address[]>('/addresses')
+  return data
+}
+
+export async function createAddress(payload: {
+  recipientName: string
+  recipientPhone: string
+  region: string
+  detail: string
+  defaultAddress: boolean
+}) {
+  const { data } = await http.post<Address>('/addresses', payload)
+  return data
+}
+
+export async function updateAddress(
+  id: string,
+  payload: {
+    recipientName: string
+    recipientPhone: string
+    region: string
+    detail: string
+    defaultAddress: boolean
+  },
+) {
+  const { data } = await http.put<Address>(`/addresses/${id}`, payload)
+  return data
+}
+
+export async function setDefaultAddress(id: string) {
+  const { data } = await http.post<Address>(`/addresses/${id}/default`)
+  return data
+}
+
+export async function deleteAddress(id: string) {
+  await http.delete(`/addresses/${id}`)
 }

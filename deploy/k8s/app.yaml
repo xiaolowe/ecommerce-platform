@@ -295,6 +295,11 @@ spec:
                 configMapKeyRef:
                   name: ecommerce-config
                   key: INVENTORY_SERVICE_URL
+            - name: CART_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: ecommerce-config
+                  key: CART_SERVICE_URL
             - name: ORDER_PAYMENT_TTL_SECONDS
               valueFrom:
                 configMapKeyRef:
@@ -436,6 +441,93 @@ spec:
   ports:
     - name: http
       port: 8086
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cart-service
+  namespace: ecommerce
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cart-service
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: cart-service
+        app.kubernetes.io/part-of: ecommerce-platform
+    spec:
+      securityContext:
+        runAsNonRoot: true
+      containers:
+        - name: cart-service
+          image: ghcr.io/example/ecommerce/cart-service:0.1.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8087
+          env:
+            - name: DB_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: ecommerce-config
+                  key: CART_DB_URL
+            - name: CATALOG_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: ecommerce-config
+                  key: CATALOG_SERVICE_URL
+          envFrom:
+            - secretRef:
+                name: ecommerce-secrets
+          startupProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            failureThreshold: 30
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: http
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 384Mi
+            limits:
+              cpu: "1"
+              memory: 768Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cart-service
+  namespace: ecommerce
+spec:
+  selector:
+    app.kubernetes.io/name: cart-service
+  ports:
+    - name: http
+      port: 8087
       targetPort: http
 ---
 apiVersion: v1
@@ -599,6 +691,11 @@ spec:
                 configMapKeyRef:
                   name: ecommerce-config
                   key: PAYMENT_SERVICE_URL
+            - name: CART_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: ecommerce-config
+                  key: CART_SERVICE_URL
             - name: CORS_ALLOWED_ORIGINS
               valueFrom:
                 configMapKeyRef:

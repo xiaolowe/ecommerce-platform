@@ -1,27 +1,22 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { createOrder } from '../services/api'
-import { apiErrorMessage } from '../services/http'
 import { useCartStore, type CartLine } from '../stores/cart'
 import { formatMoney } from '../utils/money'
 
 const cart = useCartStore()
-const router = useRouter()
-const orderingId = ref('')
-const error = ref('')
 
-async function checkout(line: CartLine) {
-  orderingId.value = line.productId
-  error.value = ''
+async function changeQuantity(line: CartLine, quantity: number) {
   try {
-    const order = await createOrder(line.productId, line.quantity)
-    cart.remove(line.productId)
-    await router.push({ name: 'order', params: { id: order.id } })
-  } catch (reason) {
-    error.value = apiErrorMessage(reason)
-  } finally {
-    orderingId.value = ''
+    await cart.setQuantity(line.productId, quantity)
+  } catch {
+    // The cart store exposes the backend error for display.
+  }
+}
+
+async function removeLine(line: CartLine) {
+  try {
+    await cart.remove(line.productId)
+  } catch {
+    // The cart store exposes the backend error for display.
   }
 }
 </script>
@@ -36,8 +31,9 @@ async function checkout(line: CartLine) {
       <span>{{ cart.count }} 件商品</span>
     </div>
 
-    <p v-if="error" class="notice">{{ error }}</p>
-    <div v-if="cart.lines.length" class="cart-list">
+    <p v-if="cart.error" class="notice">{{ cart.error }}</p>
+    <p v-if="cart.loading" class="notice neutral">正在同步购物袋…</p>
+    <div v-else-if="cart.lines.length" class="cart-list">
       <article v-for="line in cart.lines" :key="line.productId" class="cart-line">
         <div class="cart-thumb">{{ line.name.slice(0, 1).toUpperCase() }}</div>
         <div class="cart-info">
@@ -46,19 +42,19 @@ async function checkout(line: CartLine) {
           <span>{{ formatMoney(line.priceCents, line.currency) }}</span>
         </div>
         <div class="quantity-row compact">
-          <button @click="cart.setQuantity(line.productId, line.quantity - 1)">−</button>
+          <button @click="changeQuantity(line, line.quantity - 1)">−</button>
           <span>{{ line.quantity }}</span>
-          <button @click="cart.setQuantity(line.productId, line.quantity + 1)">+</button>
+          <button @click="changeQuantity(line, line.quantity + 1)">+</button>
         </div>
-        <button
-          class="primary-button small"
-          :disabled="orderingId === line.productId"
-          @click="checkout(line)"
-        >
-          {{ orderingId === line.productId ? '提交中…' : '下单' }}
-        </button>
-        <button class="text-button remove" @click="cart.remove(line.productId)">移除</button>
+        <button class="text-button remove" @click="removeLine(line)">移除</button>
       </article>
+      <div class="cart-checkout-bar">
+        <div>
+          <span>商品合计</span>
+          <strong>{{ formatMoney(cart.subtotalCents, cart.lines[0]?.currency ?? 'CNY') }}</strong>
+        </div>
+        <RouterLink to="/checkout" class="primary-button">去结算</RouterLink>
+      </div>
     </div>
     <div v-else class="empty-state">
       <h2>购物袋还是空的</h2>

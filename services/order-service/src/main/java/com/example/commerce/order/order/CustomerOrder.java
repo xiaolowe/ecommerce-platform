@@ -35,6 +35,12 @@ public class CustomerOrder {
 
     private boolean stockReleased;
 
+    private String shippingAddressId;
+    private String recipientName;
+    private String recipientPhone;
+    private String shippingRegion;
+    private String shippingDetail;
+
     private List<OrderItem> items = new ArrayList<>();
 
     public CustomerOrder() {
@@ -42,6 +48,11 @@ public class CustomerOrder {
 
     public CustomerOrder(String id, String customerId, long totalCents, String currency,
                          Instant createdAt, Instant paymentExpiresAt) {
+        this(id, customerId, totalCents, currency, createdAt, paymentExpiresAt, null);
+    }
+
+    public CustomerOrder(String id, String customerId, long totalCents, String currency,
+                         Instant createdAt, Instant paymentExpiresAt, CustomerAddress address) {
         this.id = id;
         this.customerId = customerId;
         this.status = OrderStatus.PENDING_STOCK;
@@ -51,6 +62,13 @@ public class CustomerOrder {
         this.updatedAt = createdAt;
         this.paymentExpiresAt = paymentExpiresAt;
         this.stockReleased = false;
+        if (address != null) {
+            this.shippingAddressId = address.getId();
+            this.recipientName = address.getRecipientName();
+            this.recipientPhone = address.getRecipientPhone();
+            this.shippingRegion = address.getRegion();
+            this.shippingDetail = address.getDetail();
+        }
     }
 
     public void addItem(OrderItem item) {
@@ -214,6 +232,46 @@ public class CustomerOrder {
 
     public void setVersion(long version) {
         this.version = version;
+    }
+
+    public String getShippingAddressId() {
+        return shippingAddressId;
+    }
+
+    public void setShippingAddressId(String shippingAddressId) {
+        this.shippingAddressId = shippingAddressId;
+    }
+
+    public String getRecipientName() {
+        return recipientName;
+    }
+
+    public void setRecipientName(String recipientName) {
+        this.recipientName = recipientName;
+    }
+
+    public String getRecipientPhone() {
+        return recipientPhone;
+    }
+
+    public void setRecipientPhone(String recipientPhone) {
+        this.recipientPhone = recipientPhone;
+    }
+
+    public String getShippingRegion() {
+        return shippingRegion;
+    }
+
+    public void setShippingRegion(String shippingRegion) {
+        this.shippingRegion = shippingRegion;
+    }
+
+    public String getShippingDetail() {
+        return shippingDetail;
+    }
+
+    public void setShippingDetail(String shippingDetail) {
+        this.shippingDetail = shippingDetail;
     }
 
     public List<OrderItem> getItems() {

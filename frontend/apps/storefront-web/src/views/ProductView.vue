@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { createOrder, getProduct, type Product } from '../services/api'
+import { getProduct, type Product } from '../services/api'
 import { apiErrorMessage } from '../services/http'
 import { useAuthStore } from '../stores/auth'
 import { useCartStore } from '../stores/cart'
@@ -15,6 +15,7 @@ const product = ref<Product | null>(null)
 const quantity = ref(1)
 const loading = ref(true)
 const ordering = ref(false)
+const adding = ref(false)
 const error = ref('')
 
 onMounted(async () => {
@@ -27,9 +28,21 @@ onMounted(async () => {
   }
 })
 
-function addToCart() {
+async function addToCart() {
   if (!product.value) return
-  cart.add(product.value, quantity.value)
+  if (!auth.isAuthenticated) {
+    await router.push({ name: 'auth', query: { redirect: route.fullPath } })
+    return
+  }
+  adding.value = true
+  error.value = ''
+  try {
+    await cart.add(product.value.id, quantity.value)
+  } catch (reason) {
+    error.value = apiErrorMessage(reason)
+  } finally {
+    adding.value = false
+  }
 }
 
 async function buyNow() {
@@ -40,8 +53,8 @@ async function buyNow() {
   }
   ordering.value = true
   try {
-    const order = await createOrder(product.value.id, quantity.value)
-    await router.push({ name: 'order', params: { id: order.id } })
+    await cart.add(product.value.id, quantity.value)
+    await router.push({ name: 'checkout' })
   } catch (reason) {
     error.value = apiErrorMessage(reason)
   } finally {
@@ -72,7 +85,9 @@ async function buyNow() {
 
       <p v-if="error" class="notice">{{ error }}</p>
       <div class="action-row">
-        <button class="secondary-button" @click="addToCart">加入购物袋</button>
+        <button class="secondary-button" :disabled="adding" @click="addToCart">
+          {{ adding ? '加入中…' : '加入购物袋' }}
+        </button>
         <button class="primary-button" :disabled="ordering" @click="buyNow">
           {{ ordering ? '创建订单中…' : '立即购买' }}
         </button>

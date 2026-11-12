@@ -70,6 +70,12 @@ export interface Order {
   cancelledAt?: string | null
   cancellationReason?: string | null
   stockReleased: boolean
+  shippingAddress?: {
+    recipientName: string
+    recipientPhone: string
+    region: string
+    detail: string
+  } | null
   items: Array<{
     productId: string
     sku: string

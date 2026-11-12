@@ -19,6 +19,11 @@
         <result property="cancelledAt" column="cancelled_at"/>
         <result property="cancellationReason" column="cancellation_reason"/>
         <result property="stockReleased" column="stock_released"/>
+        <result property="shippingAddressId" column="shipping_address_id"/>
+        <result property="recipientName" column="recipient_name"/>
+        <result property="recipientPhone" column="recipient_phone"/>
+        <result property="shippingRegion" column="shipping_region"/>
+        <result property="shippingDetail" column="shipping_detail"/>
         <collection property="items" ofType="com.example.commerce.order.order.OrderItem"
                     column="id" select="findItemsByOrderId"/>
     </resultMap>
@@ -34,7 +39,8 @@
 
     <sql id="orderColumns">
         id, customer_id, status, total_cents, currency, version, created_at, updated_at,
-        payment_no, paid_at, payment_expires_at, cancelled_at, cancellation_reason, stock_released
+        payment_no, paid_at, payment_expires_at, cancelled_at, cancellation_reason, stock_released,
+        shipping_address_id, recipient_name, recipient_phone, shipping_region, shipping_detail
     </sql>
 
     <sql id="adminFilters">
@@ -53,12 +59,14 @@
     <insert id="insert">
         INSERT INTO customer_orders (
             id, customer_id, status, total_cents, currency, version, created_at, updated_at,
-            payment_no, paid_at, payment_expires_at, cancelled_at, cancellation_reason, stock_released
+            payment_no, paid_at, payment_expires_at, cancelled_at, cancellation_reason, stock_released,
+            shipping_address_id, recipient_name, recipient_phone, shipping_region, shipping_detail
         )
         VALUES (
             #{id}, #{customerId}, #{status}, #{totalCents}, #{currency}, #{version},
             #{createdAt}, #{updatedAt}, #{paymentNo}, #{paidAt}, #{paymentExpiresAt},
-            #{cancelledAt}, #{cancellationReason}, #{stockReleased}
+            #{cancelledAt}, #{cancellationReason}, #{stockReleased},
+            #{shippingAddressId}, #{recipientName}, #{recipientPhone}, #{shippingRegion}, #{shippingDetail}
         )
     </insert>
 
@@ -81,6 +89,11 @@
             cancelled_at = #{cancelledAt},
             cancellation_reason = #{cancellationReason},
             stock_released = #{stockReleased},
+            shipping_address_id = #{shippingAddressId},
+            recipient_name = #{recipientName},
+            recipient_phone = #{recipientPhone},
+            shipping_region = #{shippingRegion},
+            shipping_detail = #{shippingDetail},
             updated_at = #{updatedAt},
             version = version + 1
         WHERE id = #{id}

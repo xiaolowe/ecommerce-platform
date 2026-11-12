@@ -1,6 +1,7 @@
 package com.example.commerce.order.order;
 
 import com.example.commerce.order.client.CatalogClient;
+import com.example.commerce.order.client.CartClient;
 import com.example.commerce.order.client.InventoryClient;
 import com.example.commerce.platform.common.error.ConflictException;
 import org.junit.jupiter.api.Test;
@@ -9,8 +10,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 
 import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
 
 import static com.example.commerce.order.order.OrderDtos.CreateOrderRequest;
+import static com.example.commerce.order.order.OrderDtos.CreateOrderItemRequest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -28,11 +32,17 @@ class OrderServiceTest {
     @Autowired
     private CustomerOrderMapper orderMapper;
 
+    @Autowired
+    private CustomerAddressMapper addressMapper;
+
     @MockBean
     private CatalogClient catalogClient;
 
     @MockBean
     private InventoryClient inventoryClient;
+
+    @MockBean
+    private CartClient cartClient;
 
     @Test
     void createsOrderAfterSuccessfulStockReservation() {
@@ -43,8 +53,8 @@ class OrderServiceTest {
                 .thenReturn(new InventoryClient.ReservationResult(
                         "reservation-1", "order-1", "product-1", 2, "RESERVED"));
 
-        var response = orderService.create(
-                "customer-1", "token", new CreateOrderRequest("product-1", 2));
+        var response = orderService.create("customer-1", "token", new CreateOrderRequest(
+                List.of(new CreateOrderItemRequest("product-1", 2)), addressFor("customer-1")));
 
         assertThat(response.status()).isEqualTo("PENDING_PAYMENT");
         assertThat(response.totalCents()).isEqualTo(3998);
@@ -61,8 +71,8 @@ class OrderServiceTest {
                 .thenReturn(new InventoryClient.ReservationResult(
                         "reservation-2", "order-2", "product-2", 1, "RESERVED"));
 
-        var order = orderService.create(
-                "customer-1", "token", new CreateOrderRequest("product-2", 1));
+        var order = orderService.create("customer-1", "token", new CreateOrderRequest(
+                List.of(new CreateOrderItemRequest("product-2", 1)), addressFor("customer-1")));
         orderService.markPaid(order.id(), new OrderDtos.MarkOrderPaidRequest(
                 4900, "CNY", "PAY-TEST-1"));
 
@@ -93,8 +103,8 @@ class OrderServiceTest {
                 .thenReturn(new InventoryClient.ReservationResult(
                         "reservation-3", "order-3", "product-3", 1, "RESERVED"));
 
-        var order = orderService.create(
-                "customer-1", "token", new CreateOrderRequest("product-3", 1));
+        var order = orderService.create("customer-1", "token", new CreateOrderRequest(
+                List.of(new CreateOrderItemRequest("product-3", 1)), addressFor("customer-1")));
         var cancelled = orderService.cancel("customer-1", order.id());
 
         assertThat(cancelled.status()).isEqualTo("CANCELLED");
@@ -139,5 +149,47 @@ class OrderServiceTest {
         assertThatThrownBy(() -> orderService.markPaid(
                 order.getId(), new OrderDtos.MarkOrderPaidRequest(1000, "CNY", "PAY-CLOSED")))
                 .isInstanceOf(ConflictException.class);
+    }
+
+    @Test
+    void createsMultiItemOrderAndCheckoutClearsCart() {
+        when(catalogClient.getProduct("product-a", "token"))
+                .thenReturn(new CatalogClient.ProductSnapshot(
+                        "product-a", "SKU-A", "Product A", 1000, "CNY", "ACTIVE"));
+        when(catalogClient.getProduct("product-b", "token"))
+                .thenReturn(new CatalogClient.ProductSnapshot(
+                        "product-b", "SKU-B", "Product B", 2500, "CNY", "ACTIVE"));
+        when(inventoryClient.reserve(anyString(), anyString(), anyLong()))
+                .thenReturn(new InventoryClient.ReservationResult(
+                        "reservation", "order", "product", 1, "RESERVED"));
+
+        var order = orderService.create("customer-multi", "token", new CreateOrderRequest(
+                List.of(
+                        new CreateOrderItemRequest("product-a", 2),
+                        new CreateOrderItemRequest("product-b", 1)),
+                addressFor("customer-multi")));
+
+        assertThat(order.items()).hasSize(2);
+        assertThat(order.totalCents()).isEqualTo(4500);
+        verify(cartClient).completeCheckout("customer-multi", List.of(
+                new CartClient.CheckedOutItem("product-a", 2),
+                new CartClient.CheckedOutItem("product-b", 1)));
+    }
+
+    private String addressFor(String customerId) {
+        Instant now = Instant.now();
+        CustomerAddress address = new CustomerAddress(
+                UUID.randomUUID().toString(),
+                customerId,
+                "Test User",
+                "13800000000",
+                "上海市",
+                "测试路 1 号",
+                true,
+                now,
+                now
+        );
+        addressMapper.insert(address);
+        return address.getId();
     }
 }

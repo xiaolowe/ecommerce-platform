@@ -239,6 +239,7 @@ a {
 
 .collection,
 .cart-page,
+.checkout-page,
 .order-page,
 .orders-page,
 .empty-state {
@@ -459,11 +460,196 @@ a {
 
 .cart-line {
   display: grid;
-  grid-template-columns: 84px minmax(180px, 1fr) auto auto auto;
+  grid-template-columns: 84px minmax(180px, 1fr) auto auto;
   gap: 22px;
   align-items: center;
   padding: 20px 0;
   border-bottom: 1px solid var(--line);
+}
+
+.cart-checkout-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 24px;
+  padding: 24px 0;
+}
+
+.cart-checkout-bar > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: right;
+}
+
+.cart-checkout-bar span {
+  color: #75857f;
+  font-size: 12px;
+}
+
+.cart-checkout-bar strong {
+  font-size: 24px;
+}
+
+.cart-checkout-bar .primary-button {
+  margin-top: 0;
+}
+
+.checkout-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 22px;
+  align-items: start;
+}
+
+.checkout-main {
+  display: grid;
+  gap: 18px;
+}
+
+.checkout-panel,
+.checkout-summary {
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.52);
+}
+
+.checkout-panel h2 {
+  margin: 0 0 18px;
+  font-family: Georgia, "Songti SC", serif;
+  font-size: 28px;
+  font-weight: 500;
+}
+
+.checkout-panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.address-list {
+  display: grid;
+  gap: 10px;
+}
+
+.address-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 15px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  cursor: pointer;
+}
+
+.address-card.selected {
+  border-color: var(--green);
+  background: #edf6ef;
+}
+
+.address-card span {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.address-card small {
+  overflow: hidden;
+  color: #75857f;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.address-card b {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--lime);
+  font-size: 11px;
+}
+
+.address-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.address-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  color: #596a64;
+  font-size: 13px;
+}
+
+.address-form input {
+  height: 44px;
+  padding: 0 13px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: white;
+}
+
+.address-detail {
+  grid-column: 1 / -1;
+}
+
+.default-check {
+  flex-direction: row !important;
+  align-items: center;
+}
+
+.default-check input {
+  width: 18px;
+  height: 18px;
+}
+
+.address-form .secondary-button {
+  justify-self: start;
+}
+
+.checkout-lines {
+  display: grid;
+  gap: 12px;
+}
+
+.checkout-lines > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.checkout-lines > div:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.checkout-summary {
+  position: sticky;
+  top: 110px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.checkout-summary > span,
+.checkout-summary > small {
+  color: #75857f;
+}
+
+.checkout-summary > strong {
+  font-family: Georgia, "Songti SC", serif;
+  font-size: 38px;
+  font-weight: 500;
+}
+
+.checkout-summary .primary-button {
+  margin-top: 12px;
 }
 
 .cart-thumb {
@@ -595,6 +781,22 @@ a {
 
 .order-number {
   color: #76857f;
+}
+
+.shipping-address-card {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: 22px 0;
+  padding: 17px 18px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.42);
+}
+
+.shipping-address-card span,
+.shipping-address-card small {
+  color: #75857f;
 }
 
 .order-summary {
@@ -809,7 +1011,8 @@ a {
 
   .hero,
   .product-detail,
-  .auth-page {
+  .auth-page,
+  .checkout-grid {
     grid-template-columns: 1fr;
   }
 
@@ -842,6 +1045,10 @@ a {
   .cart-line .remove {
     grid-column: 3;
     grid-row: 1;
+  }
+
+  .checkout-summary {
+    position: static;
   }
 }
 
@@ -879,5 +1086,13 @@ a {
 
   .payment-result {
     grid-template-columns: 1fr;
+  }
+
+  .address-form {
+    grid-template-columns: 1fr;
+  }
+
+  .address-detail {
+    grid-column: auto;
   }
 }

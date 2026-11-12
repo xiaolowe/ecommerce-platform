@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.commerce.order.order.CustomerAddressMapper">
+
+    <resultMap id="AddressResultMap" type="com.example.commerce.order.order.CustomerAddress">
+        <id property="id" column="id"/>
+        <result property="customerId" column="customer_id"/>
+        <result property="recipientName" column="recipient_name"/>
+        <result property="recipientPhone" column="recipient_phone"/>
+        <result property="region" column="region"/>
+        <result property="detail" column="detail"/>
+        <result property="defaultAddress" column="default_address"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <sql id="addressColumns">
+        id, customer_id, recipient_name, recipient_phone, region, detail,
+        default_address, created_at, updated_at
+    </sql>
+
+    <select id="findByCustomerId" resultMap="AddressResultMap">
+        SELECT <include refid="addressColumns"/>
+        FROM customer_addresses
+        WHERE customer_id = #{customerId}
+        ORDER BY default_address DESC, updated_at DESC
+    </select>
+
+    <select id="findByIdAndCustomerId" resultMap="AddressResultMap">
+        SELECT <include refid="addressColumns"/>
+        FROM customer_addresses
+        WHERE id = #{id} AND customer_id = #{customerId}
+    </select>
+
+    <select id="findDefaultByCustomerId" resultMap="AddressResultMap">
+        SELECT <include refid="addressColumns"/>
+        FROM customer_addresses
+        WHERE customer_id = #{customerId} AND default_address = TRUE
+        ORDER BY updated_at DESC
+        LIMIT 1
+    </select>
+
+    <update id="clearDefault">
+        UPDATE customer_addresses
+        SET default_address = FALSE
+        WHERE customer_id = #{customerId} AND default_address = TRUE
+    </update>
+
+    <insert id="insert">
+        INSERT INTO customer_addresses (
+            id, customer_id, recipient_name, recipient_phone, region, detail,
+            default_address, created_at, updated_at
+        )
+        VALUES (
+            #{id}, #{customerId}, #{recipientName}, #{recipientPhone}, #{region}, #{detail},
+            #{defaultAddress}, #{createdAt}, #{updatedAt}
+        )
+    </insert>
+
+    <update id="update">
+        UPDATE customer_addresses
+        SET recipient_name = #{recipientName},
+            recipient_phone = #{recipientPhone},
+            region = #{region},
+            detail = #{detail},
+            default_address = #{defaultAddress},
+            updated_at = #{updatedAt}
+        WHERE id = #{id} AND customer_id = #{customerId}
+    </update>
+
+    <delete id="deleteByIdAndCustomerId">
+        DELETE FROM customer_addresses
+        WHERE id = #{id} AND customer_id = #{customerId}
+    </delete>
+</mapper>

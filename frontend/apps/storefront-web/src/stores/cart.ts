@@ -1,77 +1,110 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
-import type { Product } from '../services/api'
+import {
+  addCartItem,
+  clearCart as clearServerCart,
+  getCart,
+  removeCartItem,
+  updateCartItemQuantity,
+  type CartResponse,
+} from '../services/api'
+import { apiErrorMessage } from '../services/http'
 
 export interface CartLine {
+  id: string
   productId: string
   sku: string
   name: string
   priceCents: number
   currency: string
   quantity: number
-}
-
-const CART_KEY = 'store.cart'
-
-function loadCart(): CartLine[] {
-  const raw = localStorage.getItem(CART_KEY)
-  if (!raw) return []
-  try {
-    return JSON.parse(raw) as CartLine[]
-  } catch {
-    localStorage.removeItem(CART_KEY)
-    return []
-  }
+  updatedAt: string
 }
 
 export const useCartStore = defineStore('cart', () => {
-  const lines = ref<CartLine[]>(loadCart())
+  const lines = ref<CartLine[]>([])
+  const loading = ref(false)
+  const error = ref('')
   const count = computed(() => lines.value.reduce((sum, line) => sum + line.quantity, 0))
   const subtotalCents = computed(() =>
     lines.value.reduce((sum, line) => sum + line.priceCents * line.quantity, 0),
   )
 
-  function persist() {
-    localStorage.setItem(CART_KEY, JSON.stringify(lines.value))
+  function applyCart(cart: CartResponse) {
+    lines.value = cart.items.map((item) => ({
+      id: item.id,
+      productId: item.productId,
+      sku: item.sku,
+      name: item.productName,
+      priceCents: item.unitPriceCents,
+      currency: item.currency,
+      quantity: item.quantity,
+      updatedAt: item.updatedAt,
+    }))
   }
 
-  function add(product: Product, quantity: number) {
-    const line = lines.value.find((item) => item.productId === product.id)
-    if (line) {
-      line.quantity += quantity
-    } else {
-      lines.value.push({
-        productId: product.id,
-        sku: product.sku,
-        name: product.name,
-        priceCents: product.priceCents,
-        currency: product.currency,
-        quantity,
-      })
+  async function load() {
+    loading.value = true
+    error.value = ''
+    try {
+      applyCart(await getCart())
+    } catch (reason) {
+      error.value = apiErrorMessage(reason)
+    } finally {
+      loading.value = false
     }
-    persist()
   }
 
-  function setQuantity(productId: string, quantity: number) {
-    const line = lines.value.find((item) => item.productId === productId)
-    if (!line) return
-    if (quantity <= 0) {
-      remove(productId)
-      return
+  async function add(productId: string, quantity: number) {
+    error.value = ''
+    try {
+      applyCart(await addCartItem(productId, quantity))
+    } catch (reason) {
+      error.value = apiErrorMessage(reason)
+      throw reason
     }
-    line.quantity = quantity
-    persist()
   }
 
-  function remove(productId: string) {
-    lines.value = lines.value.filter((item) => item.productId !== productId)
-    persist()
+  async function setQuantity(productId: string, quantity: number) {
+    error.value = ''
+    try {
+      applyCart(
+        quantity <= 0
+          ? await removeCartItem(productId)
+          : await updateCartItemQuantity(productId, quantity),
+      )
+    } catch (reason) {
+      error.value = apiErrorMessage(reason)
+      throw reason
+    }
   }
 
-  function clear() {
+  async function remove(productId: string) {
+    error.value = ''
+    try {
+      applyCart(await removeCartItem(productId))
+    } catch (reason) {
+      error.value = apiErrorMessage(reason)
+      throw reason
+    }
+  }
+
+  async function clear() {
+    error.value = ''
+    try {
+      await clearServerCart()
+      lines.value = []
+    } catch (reason) {
+      error.value = apiErrorMessage(reason)
+      throw reason
+    }
+  }
+
+  function reset() {
     lines.value = []
-    persist()
+    loading.value = false
+    error.value = ''
   }
 
-  return { lines, count, subtotalCents, add, setQuantity, remove, clear }
+  return { lines, loading, error, count, subtotalCents, load, add, setQuantity, remove, clear, reset }
 })

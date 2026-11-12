@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from './stores/auth'
 import { useCartStore } from './stores/cart'
@@ -9,9 +10,21 @@ const router = useRouter()
 
 function logout() {
   auth.logout()
-  cart.clear()
+  cart.reset()
   router.push('/')
 }
+
+watch(
+  () => auth.isAuthenticated,
+  (authenticated) => {
+    if (authenticated) {
+      void cart.load()
+    } else {
+      cart.reset()
+    }
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
